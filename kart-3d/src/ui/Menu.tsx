@@ -8,16 +8,22 @@ export default function Menu() {
   const [showLeaders, setShowLeaders] = useState(false)
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(1200px 600px at 50% 0%, rgba(255,255,255,0.05), rgba(0,0,0,0.9))', animation: 'bgPan 18s linear infinite' as any, zIndex: 0 }} />
-      <style>{`@keyframes bgPan{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}`}</style>
-      <div style={{ position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: 24, borderRadius: 12, minWidth: 360, boxShadow: '0 10px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', transition: 'transform .25s, opacity .25s' }}>
-        <h2 style={{ marginTop: 0, marginBottom: 12 }}>Project TurboKart</h2>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <button onClick={() => setScreen('character')} style={{ padding: '10px 12px', borderRadius: 8, border: 0, cursor: 'pointer' }}>Single-Player</button>
-          <button disabled style={{ padding: '10px 12px', borderRadius: 8, border: 0, opacity: 0.5 }}>Multiplayer (coming soon)</button>
-          <button onClick={() => setScreen('garage')} style={{ padding: '10px 12px', borderRadius: 8, border: 0, cursor: 'pointer' }}>Garage</button>
-          <button onClick={() => setShowOptions(true)} style={{ padding: '10px 12px', borderRadius: 8, border: 0, cursor: 'pointer' }}>Options</button>
-          <button onClick={() => setShowLeaders(true)} style={{ padding: '10px 12px', borderRadius: 8, border: 0, cursor: 'pointer' }}>Leaderboards</button>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(1200px 600px at 50% 0%, rgba(255,255,255,0.04), rgba(0,0,0,0.86))', animation: 'bgPan 18s linear infinite' as any, zIndex: 0 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'conic-gradient(from 0deg at 50% 10%, rgba(255,0,128,0.08), rgba(0,200,255,0.06), rgba(255,230,0,0.08), rgba(0,255,150,0.06), rgba(255,0,128,0.08))' }} />
+      <style>{`
+        @keyframes bgPan{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+        .btn{padding:12px 14px;border-radius:12px;border:0;color:#111;font-weight:800;letter-spacing:.3px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.35) inset,0 8px 24px rgba(0,0,0,.35);transition:transform .12s ease, filter .12s ease}
+        .btn:hover{transform:translateY(-1px);filter:saturate(1.2)}
+        .btn:active{transform:translateY(0)}
+      `}</style>
+      <div style={{ position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.55)', color: '#fff', padding: 24, borderRadius: 16, minWidth: 420, boxShadow: '0 10px 40px rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', transition: 'transform .25s, opacity .25s' }}>
+        <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 36, background: 'linear-gradient(90deg,#00d0ff,#ffd400,#ff3bd4)', WebkitBackgroundClip: 'text', color: 'transparent' as any }}>Project TurboKart</h2>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <button onClick={() => setScreen('character')} className="btn" style={{ background: 'linear-gradient(180deg,#00e1ff,#00b7ff)', color: '#00121a' }}>Single-Player</button>
+          <button disabled className="btn" style={{ background: 'linear-gradient(180deg,#3b3b3b,#2a2a2a)', color: '#9aa0a6', opacity: 0.6 }}>Multiplayer (coming soon)</button>
+          <button onClick={() => setScreen('garage')} className="btn" style={{ background: 'linear-gradient(180deg,#66ff9a,#06d67a)', color: '#002315' }}>Garage</button>
+          <button onClick={() => setShowOptions(true)} className="btn" style={{ background: 'linear-gradient(180deg,#ffd44d,#ff9d00)', color: '#2a1600' }}>Options</button>
+          <button onClick={() => setShowLeaders(true)} className="btn" style={{ background: 'linear-gradient(180deg,#ff72ff,#b05cff)', color: '#1b0022' }}>Leaderboards</button>
         </div>
       </div>
 
