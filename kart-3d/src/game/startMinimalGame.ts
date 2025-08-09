@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { TUNING } from '../mechanics/tuning'
+import { applyHandling } from '../mechanics/handling'
 import Stats from 'stats.js'
 import { createWorld, defineComponent, defineQuery, defineSystem, Types, addComponent, addEntity } from 'bitecs'
 import type { IWorld } from 'bitecs'
@@ -1072,92 +1074,17 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
     function applyDriveForEntity(ed: EntityData, topScale: number) {
       const throttle = InputComp.throttle[ed.eid]
       const steerInput = InputComp.steer[ed.eid]
-      const body = ed.body
-      const MASS = 150
-      const GRAV = 9.82
-      // Surface grip coefficient (friction circle)
-      const mu = currentSurface === 'mud' ? TUNING.SURFACE_MU.mud : currentSurface === 'curb' ? TUNING.SURFACE_MU.curb : TUNING.SURFACE_MU.tarmac
-      const maxTraction = mu * MASS * GRAV
-
-      // Orientation vectors derived from physics body quaternion (authoritative)
-      const q = body.quaternion
-      const yaw = Math.atan2(q.y * q.w * 2, 1 - 2 * (q.y * q.y + q.z * q.z))
-      const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw))
-      const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw))
-
-      // Velocity decomposition
-      const vel = new THREE.Vector3(body.velocity.x, 0, body.velocity.z)
-      const vF = THREE.MathUtils.clamp(vel.dot(forward), -100, 100)
-      const vLat = THREE.MathUtils.clamp(vel.dot(right), -100, 100)
-
-      // Targets & forces
-      let top = BASE_TOP * envTop * topScale
-      if (ed.lightningUntil > now) top *= 0.7
-      const accelForce = MASS * BASE_ACCEL * envAccel // long accel baseline
-      const brakeForce = MASS * 18            // stronger braking
-
-      let Fx = 0
-      let Fz = 0
-
-      // Longitudinal (throttle/brake)
-      if (throttle > 0) {
-        // approach top speed
-        const speedError = Math.max(0, top - Math.max(0, vF))
-        const long = Math.min(accelForce * throttle, speedError * MASS)
-        Fx += forward.x * long
-        Fz += forward.z * long
-      } else if (throttle < 0) {
-        const long = brakeForce * (-throttle) * (1 + Math.abs(vF))
-        Fx -= forward.x * long * Math.sign(vF || 1)
-        Fz -= forward.z * long * Math.sign(vF || 1)
-      }
-
-      // Lateral grip opposes slip
-      const baseGrip = TUNING.BASE_GRIP
-      const driftSlip = Drive.drifting[ed.eid] ? 0.3 : 0.0
-      const surfaceGrip = currentSurface === 'mud' ? 0.7 : currentSurface === 'curb' ? 0.9 : 1.0
-      const gripCoeff = baseGrip * surfaceGrip * (1 - driftSlip)
-      const FlatMag = -vLat * gripCoeff * MASS
-      Fx += right.x * FlatMag
-      Fz += right.z * FlatMag
-
-      // Traction circle: limit combined force
-      const Fmag = Math.hypot(Fx, Fz)
-      if (Fmag > maxTraction) {
-        const scale = maxTraction / Fmag
-        Fx *= scale
-        Fz *= scale
-      }
-      body.applyForce({ x: Fx, y: 0, z: Fz } as any, body.position as any)
-
-      // Steering: torque-based, reduced at high speed
-      const speedAbs = Math.abs(vF)
-      const steerEff = THREE.MathUtils.clamp(1 - speedAbs / (top + 1e-3), TUNING.MIN_STEER_EFF, 1)
-      let steer = steerInput * steerEff * (ed.lightningUntil > now ? 1.1 : 1.0)
-      if (speedAbs < TUNING.LOW_SPEED_ASSIST_ON) steer *= TUNING.LOW_SPEED_ASSIST_GAIN
-      if (speedAbs > TUNING.LOW_SPEED_ASSIST_OFF) steer *= 1.0
-      const yawTorque = steer * MASS * 12 * BASE_HANDLING
-      body.torque.y += yawTorque
-
-      // Downforce and angular damping for stability
-      const downforce = 0.6 * speedAbs * speedAbs
-      body.applyForce({ x: 0, y: -downforce, z: 0 } as any, body.position as any)
-      body.angularDamping = 0.6
-
-      // Clamp yaw rate
-      const maxYaw = 2.2 // rad/s
-      if (Math.abs(body.angularVelocity.y) > maxYaw) {
-        body.angularVelocity.y = Math.sign(body.angularVelocity.y) * maxYaw
-      }
-
-      // Ensure translation reflects drive velocity (authoritative forward speed)
-      // This directly aligns physics velocity with ECS-computed forward speed so the kart actually moves.
-      const desiredForwardSpeed = Math.max(0, Math.min(top, Drive.vel[ed.eid]))
-      const currentForwardSpeed = vF
-      const deltaForward = desiredForwardSpeed - currentForwardSpeed
-      // Nudge velocity toward desired forward speed each frame
-      body.velocity.x += forward.x * deltaForward
-      body.velocity.z += forward.z * deltaForward
+      applyHandling(
+        ed.body,
+        Drive.vel[ed.eid],
+        { throttle, steer: steerInput, drift: Drive.drifting[ed.eid] ? 1 : 0 },
+        currentSurface,
+        envAccel,
+        envTop * topScale,
+        now,
+        ed.lightningUntil,
+        TUNING,
+      )
     }
     if (playerData) applyDriveForEntity(playerData, speedScaleRef.topSpeedScale || 1)
     if (aiData) applyDriveForEntity(aiData, 1)

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { SaveProfile } from './types'
 import { loadProfile, saveProfile } from './save'
 
-export type Screen = 'menu' | 'character' | 'track' | 'garage' | 'race'
+export type Screen = 'splash' | 'loading' | 'menu' | 'character' | 'track' | 'garage' | 'race'
 
 type CharacterDef = { id: string; name: string; perk: 'Sprinter'|'Tank'|'Slick'|'Turbo' }
 
@@ -26,7 +26,7 @@ export type AppState = {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  screen: 'menu',
+  screen: 'splash',
   profile: loadProfile(),
   characters,
   selectedCharacterId: 'sprinter',
