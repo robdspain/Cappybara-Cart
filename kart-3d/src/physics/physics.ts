@@ -42,6 +42,9 @@ export function createKartBody(world: World, defaultMat: Material) {
   const body = new Body({ mass: 150, material: defaultMat })
   body.addShape(new Box(half))
   body.position.set(0, 0.6, 0)
+  body.angularDamping = 0.6
+  body.linearDamping = 0.2
+  ;(body as any).allowSleep = false
   world.addBody(body)
   return body
 }

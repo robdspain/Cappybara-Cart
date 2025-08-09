@@ -28,6 +28,22 @@ const InputComp = defineComponent({
   useItem: Types.ui8,
 })
 
+// Tuning constants (no magic numbers)
+const TUNING = {
+  DRIFT_THRESH: 0.4,
+  ACCEL: 14,
+  BASE_TOP_SPEED: 30,
+  BASE_HANDLING: 1.0,
+  MASS: 150,
+  GRAVITY: 9.82,
+  BASE_GRIP: 45,
+  MIN_STEER_EFF: 0.25,
+  LOW_SPEED_ASSIST_ON: 1.5,
+  LOW_SPEED_ASSIST_OFF: 3.0,
+  LOW_SPEED_ASSIST_GAIN: 1.3,
+  SURFACE_MU: { tarmac: 1.3, curb: 0.9, mud: 0.6 } as Record<'tarmac'|'curb'|'mud'|'ramp', number>,
+}
+
 // Simple input manager
 function createInput() {
   const state = { throttle: 0, steer: 0, drift: 0, useItem: 0 }
@@ -168,10 +184,10 @@ function createDriveSystem(
   speedScaleRef: { topSpeedScale: number },
   grantMiniTurbo: (seconds: number) => void
 ) {
-  const ACCEL = 14
-  const BASE_TOP_SPEED = 30
-  const HANDLING = 1.0
-  const DRIFT_THRESH = 0.4
+  const ACCEL = TUNING.ACCEL
+  const BASE_TOP_SPEED = TUNING.BASE_TOP_SPEED
+  const HANDLING = TUNING.BASE_HANDLING
+  const DRIFT_THRESH = TUNING.DRIFT_THRESH
   return defineSystem((world: IWorld, dt: number) => {
     const entities = queryDrive(world)
     for (let i = 0; i < entities.length; i += 1) {
@@ -259,10 +275,10 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
   ;(dir.shadow.camera as THREE.OrthographicCamera).bottom = -20
   scene.add(dir)
 
-  // Ground
+  // Ground and clear paved track (tarmac ribbon)
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 200),
-    new THREE.MeshStandardMaterial({ color: 0x228b22 })
+    new THREE.PlaneGeometry(400, 400),
+    new THREE.MeshStandardMaterial({ color: 0x2d6a4f })
   )
   ground.rotation.x = -Math.PI / 2
   ground.receiveShadow = true
@@ -377,7 +393,15 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
   capyGroup.add(torso, head, snout, earL, earR, eyeL, eyeR, armL, armR, legL, legR, tail)
   kartGroup.add(capyGroup)
 
+  // Animation baselines
+  const baseHeadY = head.position.y
+  const baseArmLRotZ = armL.rotation.z
+  const baseArmRRotZ = armR.rotation.z
+  let animTime = 0
+
   scene.add(kartGroup)
+  // Start the kart centered on the track start
+  kartGroup.position.set(0, 0.0, 0)
   // Enable shadows on kart pieces
   kartGroup.traverse((o) => {
     o.castShadow = true
@@ -816,6 +840,8 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
     laps: number
     finished: boolean
     finishRank: number
+    lapStartMs: number
+    lapTimes: number[]
   }
   const entities: EntityData[] = []
   let playerData: EntityData | null = null
@@ -905,6 +931,29 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       list.appendChild(row)
     }
     panel.appendChild(list)
+
+    // Lap split times for player
+    if (playerData && playerData.lapTimes.length > 0) {
+      const lapsDiv = document.createElement('div')
+      lapsDiv.style.marginTop = '10px'
+      const title2 = document.createElement('div')
+      title2.textContent = 'Lap Times (You)'
+      title2.style.fontSize = '14px'
+      title2.style.opacity = '0.9'
+      title2.style.marginBottom = '4px'
+      lapsDiv.appendChild(title2)
+      for (let i = 0; i < playerData.lapTimes.length; i++) {
+        const t = playerData.lapTimes[i]
+        const row = document.createElement('div')
+        row.style.display = 'flex'
+        row.style.justifyContent = 'space-between'
+        row.style.fontSize = '13px'
+        row.style.opacity = '0.9'
+        row.innerHTML = `<span>Lap ${i + 1}</span><span>${t.toFixed(2)}s</span>`
+        lapsDiv.appendChild(row)
+      }
+      panel.appendChild(lapsDiv)
+    }
     const controls = document.createElement('div')
     controls.style.marginTop = '16px'
     const btn = document.createElement('button')
@@ -954,6 +1003,8 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       ed.shieldUntil = 0
       ed.spinUntil = 0
       ed.lightningUntil = 0
+      ed.lapTimes = []
+      ed.lapStartMs = performance.now()
       InputComp.throttle[ed.eid] = 0
       InputComp.steer[ed.eid] = 0
       InputComp.drift[ed.eid] = 0
@@ -1025,7 +1076,7 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       const MASS = 150
       const GRAV = 9.82
       // Surface grip coefficient (friction circle)
-      const mu = currentSurface === 'mud' ? 0.6 : currentSurface === 'curb' ? 0.9 : 1.3
+      const mu = currentSurface === 'mud' ? TUNING.SURFACE_MU.mud : currentSurface === 'curb' ? TUNING.SURFACE_MU.curb : TUNING.SURFACE_MU.tarmac
       const maxTraction = mu * MASS * GRAV
 
       // Orientation vectors derived from physics body quaternion (authoritative)
@@ -1062,7 +1113,7 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       }
 
       // Lateral grip opposes slip
-      const baseGrip = 45
+      const baseGrip = TUNING.BASE_GRIP
       const driftSlip = Drive.drifting[ed.eid] ? 0.3 : 0.0
       const surfaceGrip = currentSurface === 'mud' ? 0.7 : currentSurface === 'curb' ? 0.9 : 1.0
       const gripCoeff = baseGrip * surfaceGrip * (1 - driftSlip)
@@ -1081,8 +1132,10 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
 
       // Steering: torque-based, reduced at high speed
       const speedAbs = Math.abs(vF)
-      const steerAtSpeed = THREE.MathUtils.clamp(1 - speedAbs / (top + 1e-3), 0.2, 1)
-      const steer = steerInput * steerAtSpeed * (ed.lightningUntil > now ? 1.1 : 1.0)
+      const steerEff = THREE.MathUtils.clamp(1 - speedAbs / (top + 1e-3), TUNING.MIN_STEER_EFF, 1)
+      let steer = steerInput * steerEff * (ed.lightningUntil > now ? 1.1 : 1.0)
+      if (speedAbs < TUNING.LOW_SPEED_ASSIST_ON) steer *= TUNING.LOW_SPEED_ASSIST_GAIN
+      if (speedAbs > TUNING.LOW_SPEED_ASSIST_OFF) steer *= 1.0
       const yawTorque = steer * MASS * 12 * BASE_HANDLING
       body.torque.y += yawTorque
 
@@ -1117,7 +1170,7 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       Transform.x[ed.eid] = ed.body.position.x
       Transform.y[ed.eid] = ed.body.position.y
       Transform.z[ed.eid] = ed.body.position.z
-      Transform.yaw[ed.eid] = Math.atan2(ed.body.quaternion.y * ed.body.quaternion.w * 2, 1 - 2 * (ed.body.quaternion.y * ed.body.quaternion.y + ed.body.quaternion.z * ed.body.quaternion.z))
+      // Do not write yaw here; steering is torque-only (physics authoritative).
     }
     function applyReplayFrame(index: number) {
       const f = replayFrames[index]
@@ -1169,6 +1222,9 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       if (nearStart && ed.lastCheckpoint === checkpoints.length - 1 && !ed.finished) {
         ed.laps += 1
         ed.lastCheckpoint = 0
+        const lapSec = Math.max(0, (now - ed.lapStartMs) / 1000)
+        if (!Number.isNaN(lapSec) && lapSec > 0.01) ed.lapTimes.push(lapSec)
+        ed.lapStartMs = now
         if (ed.laps >= lapsTarget) {
           ed.finished = true
         }
@@ -1330,6 +1386,38 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
       camera.lookAt(Transform.x[playerData.eid], 1.0, Transform.z[playerData.eid])
     }
 
+    // Player steering angle (front wheel visuals + steering wheel + arms)
+    let steerAngle = 0
+    let forwardSpeed = 0
+    if (playerData) {
+      const steerInput = InputComp.steer[playerData.eid]
+      const MAX_STEER_VISUAL = 0.45 // radians
+      steerAngle = THREE.MathUtils.clamp(steerInput, -1, 1) * MAX_STEER_VISUAL
+      const v = Drive.vel[playerData.eid] || 0
+      forwardSpeed = Math.max(0, v)
+    }
+
+    // Animate steering pivots smoothly
+    pivotFL.rotation.y = THREE.MathUtils.lerp(pivotFL.rotation.y, steerAngle, 0.25)
+    pivotFR.rotation.y = THREE.MathUtils.lerp(pivotFR.rotation.y, steerAngle, 0.25)
+
+    // Wheel spin from linear speed
+    const WHEEL_RADIUS = 0.35
+    const omega = (forwardSpeed / WHEEL_RADIUS)
+    const spinDelta = omega * dt
+    wFL.rotation.x -= spinDelta
+    wFR.rotation.x -= spinDelta
+    wRL.rotation.x -= spinDelta
+    wRR.rotation.x -= spinDelta
+
+    // Capybara micro-animation
+    animTime += dt
+    const speedNorm = THREE.MathUtils.clamp(forwardSpeed / 30, 0, 1)
+    head.position.y = baseHeadY + Math.sin(animTime * 10) * 0.01 * speedNorm
+    steeringPivot.rotation.y = THREE.MathUtils.lerp(steeringPivot.rotation.y, steerAngle * 1.8, 0.25)
+    armL.rotation.z = THREE.MathUtils.lerp(armL.rotation.z, baseArmLRotZ - steerAngle * 0.6, 0.25)
+    armR.rotation.z = THREE.MathUtils.lerp(armR.rotation.z, baseArmRRotZ + steerAngle * 0.6, 0.25)
+
     renderer.render(scene, camera)
 
     // Replay record & HUD update
@@ -1420,6 +1508,8 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
     laps: 0,
     finished: false,
     finishRank: 0,
+    lapStartMs: performance.now(),
+    lapTimes: [],
   }
   entities.push(playerData)
 
@@ -1451,6 +1541,8 @@ export function startMinimalGame(canvas: HTMLCanvasElement) {
     laps: 0,
     finished: false,
     finishRank: 0,
+    lapStartMs: performance.now(),
+    lapTimes: [],
   }
   entities.push(aiData)
 
