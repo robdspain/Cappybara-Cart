@@ -1,0 +1,217 @@
+/* EnhancedUI.css - Styling for the enhanced UI components */
+
+/* Button component */
+.enhanced-button {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  border: none;
+  cursor: pointer;
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  padding: 20px 40px;
+  margin: 10px;
+  min-width: 180px;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.2s ease-in-out;
+}
+
+.enhanced-button:hover {
+  transform: scale(1.05);
+}
+
+.enhanced-button:active {
+  transform: scale(0.95);
+}
+
+.enhanced-button-text {
+  position: relative;
+  z-index: 2;
+  font-size: 1.2rem;
+}
+
+/* Panel component */
+.enhanced-panel {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  padding: 30px;
+  margin: 20px auto;
+  max-width: 800px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.enhanced-panel-header {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  padding: 15px 40px;
+  margin-bottom: 20px;
+  width: 80%;
+  max-width: 500px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  top: -20px;
+}
+
+.enhanced-panel-header h2,
+.enhanced-panel-title {
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.enhanced-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-grow: 1;
+  padding: 10px;
+}
+
+/* Star Rating */
+.star-rating {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.star-rating-star {
+  width: 50px;
+  height: 50px;
+  margin: 0 5px;
+}
+
+/* Countdown */
+.enhanced-countdown {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.countdown-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+@keyframes countdown-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Main Menu */
+.main-menu-panel {
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-menu-logo {
+  max-width: 70%;
+  margin-bottom: 20px;
+  margin-top: 40px;
+}
+
+.main-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+/* Results Panel */
+.results-panel {
+  min-height: 500px;
+}
+
+.results-content {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.results-position,
+.results-time {
+  font-family: 'Arial', sans-serif;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-size: 1.5rem;
+  margin: 10px 0;
+}
+
+.results-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Pause Menu */
+.pause-menu-panel {
+  min-height: 400px;
+}
+
+.pause-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .enhanced-button {
+    min-width: 150px;
+    min-height: 60px;
+    padding: 15px 30px;
+  }
+  
+  .enhanced-panel {
+    max-width: 90%;
+    padding: 20px;
+  }
+  
+  .enhanced-panel-header {
+    width: 90%;
+    min-height: 60px;
+  }
+  
+  .star-rating-star {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .results-position,
+  .results-time {
+    font-size: 1.2rem;
+  }
+} 

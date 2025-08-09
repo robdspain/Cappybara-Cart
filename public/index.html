@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <!-- Add a simple favicon using emoji to avoid needing a real icon file -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐹</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4caf50" />
+    <meta
+      name="description"
+      content="Capybara Kart - a Mario Kart style racing game with Capybaras"
+    />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐹</text></svg>">
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>Capybara Kart</title>
+    <!-- Fallback textures script -->
+    <script src="%PUBLIC_URL%/textures/fallback.js"></script>
+    <!-- Dynamic texture generation scripts -->
+    <script src="%PUBLIC_URL%/textures/grass.js"></script>
+    <script src="%PUBLIC_URL%/textures/track.js"></script>
+    <script src="%PUBLIC_URL%/textures/sky.js"></script>
+    <script src="%PUBLIC_URL%/textures/capybara.js"></script>
+    <script src="%PUBLIC_URL%/textures/sand.js"></script>
+    <script src="%PUBLIC_URL%/textures/water.js"></script>
+    <style>
+      /* Add styles for the focus button */
+      #focus-button {
+        position: absolute;
+        bottom: 70px;
+        left: 20px;
+        z-index: 1000;
+        padding: 8px 16px;
+        background-color: #39A649;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      
+      #force-start-button {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        padding: 8px 16px;
+        background-color: #E74C3C;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!-- Script to handle deprecated unload event listeners -->
+    <script>
+      // Modern approach to handle deprecated unload event
+      // This replaces all unload event listeners with more modern pagehide or beforeunload events
+      (function() {
+        // Save original methods
+        const originalAddEventListener = EventTarget.prototype.addEventListener;
+        
+        // Replace addEventListener to intercept unload events
+        EventTarget.prototype.addEventListener = function(type, listener, options) {
+          if (type === 'unload') {
+            // Use more modern beforeunload or pagehide instead
+            const alternativeEvent = 'pagehide';
+            console.log(`Deprecated 'unload' event listener replaced with '${alternativeEvent}'`);
+            return originalAddEventListener.call(
+              this, 
+              alternativeEvent, 
+              listener, 
+              options
+            );
+          }
+          
+          // Call original method for all other events
+          return originalAddEventListener.call(this, type, listener, options);
+        };
+        
+        // Also handle potential removeEventListener calls
+        const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
+        EventTarget.prototype.removeEventListener = function(type, listener, options) {
+          if (type === 'unload') {
+            const alternativeEvent = 'pagehide';
+            console.log(`Deprecated 'unload' event listener removal replaced with '${alternativeEvent}'`);
+            return originalRemoveEventListener.call(
+              this, 
+              alternativeEvent, 
+              listener, 
+              options
+            );
+          }
+          
+          return originalRemoveEventListener.call(this, type, listener, options);
+        };
+        
+        console.log('Unload event handler polyfill initialized');
+      })();
+    </script>
+    
+    <!-- Focus button to help capture keyboard events -->
+    <button id="focus-button" onclick="focusCanvas()">CLICK HERE TO FOCUS</button>
+    
+    <!-- Force race start button -->
+    <button id="force-start-button" onclick="startRace()">FORCE RACE START</button>
+    
+    <script>
+      function focusCanvas() {
+        // Find the canvas element and focus it
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+          canvas.focus();
+          canvas.setAttribute('tabindex', '0'); // Make canvas focusable
+          console.log("Canvas focused via button click");
+
+          // Force the game to recognize that keys should start working
+          // This will trigger key events that the game can process
+          const forceKeyEvent = (key) => {
+            // Create keydown event
+            const keyDownEvent = new KeyboardEvent('keydown', {
+              code: key,
+              key: key,
+              bubbles: true,
+              cancelable: true
+            });
+            // Create keyup event
+            const keyUpEvent = new KeyboardEvent('keyup', {
+              code: key,
+              key: key,
+              bubbles: true,
+              cancelable: true
+            });
+            
+            // Dispatch events
+            window.dispatchEvent(keyDownEvent);
+            setTimeout(() => window.dispatchEvent(keyUpEvent), 10);
+            
+            console.log(`Sent force key event for: ${key}`);
+          };
+          
+          // Send events for arrow keys to initialize them
+          setTimeout(() => {
+            forceKeyEvent('ArrowUp');
+            forceKeyEvent('ArrowDown');
+            forceKeyEvent('ArrowLeft');
+            forceKeyEvent('ArrowRight');
+          }, 100);
+        }
+      }
+      
+      function startRace() {
+        // Call the global function exposed by Game3DCanvas
+        if (window.forceRaceStart) {
+          window.forceRaceStart();
+          console.log("Force race start triggered via button");
+          
+          // Focus the canvas after starting the race
+          setTimeout(focusCanvas, 500);
+        } else {
+          console.error("forceRaceStart function not found!");
+        }
+      }
+    </script>
+  </body>
+</html> 

@@ -1,0 +1,288 @@
+/* Kart Customization Screen Styles */
+.kart-customize-screen {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FF9800 0%, #F44336 100%);
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Arial', sans-serif;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.kart-customize-screen h1 {
+  font-size: 42px;
+  margin-bottom: 30px;
+  text-align: center;
+  position: relative;
+  display: inline-block;
+}
+
+.kart-customize-screen h1:after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #FFEB3B;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.kart-customize-container {
+  display: flex;
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  gap: 20px;
+}
+
+/* Parts selection styles */
+.kart-parts-container {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.part-selector {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 15px;
+}
+
+.part-selector h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 22px;
+  text-transform: uppercase;
+  border-bottom: 2px solid;
+  padding-bottom: 5px;
+}
+
+.body-color {
+  color: #FF5722;
+  border-color: #FF5722;
+}
+
+.wheel-color {
+  color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.glider-color {
+  color: #2196F3;
+  border-color: #2196F3;
+}
+
+.body-color-bg {
+  background-color: rgba(255, 87, 34, 0.2);
+}
+
+.wheel-color-bg {
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+.glider-color-bg {
+  background-color: rgba(33, 150, 243, 0.2);
+}
+
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.part-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.part-card:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+.part-card.selected {
+  border-color: #FFEB3B;
+  background-color: rgba(255, 235, 59, 0.2);
+  box-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
+}
+
+.part-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.part-name {
+  font-size: 14px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Kart info styles */
+.kart-info-container {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kart-preview, .stats-summary {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.kart-preview h3, .stats-summary h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #FFEB3B;
+  font-size: 22px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.kart-preview-image {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.kart-combined {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.kart-parts-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.kart-part {
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.kart-part span {
+  font-weight: bold;
+  color: #FFEB3B;
+}
+
+/* Stats styles */
+.stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kart-stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kart-stat-label {
+  width: 110px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.kart-stat-bar-container {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  height: 15px;
+}
+
+.kart-stat-bar-segment {
+  flex: 1;
+  border-radius: 2px;
+}
+
+.kart-stat-bar-segment.empty {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.kart-stat-bar-segment.filled {
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Confirm button styles */
+.kart-confirm-button {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: bold;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 5px 0 #2E7D32, 0 6px 20px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.kart-confirm-button:hover {
+  background-color: #66BB6A;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #2E7D32, 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.kart-confirm-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #2E7D32, 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .kart-customize-container {
+    flex-direction: column;
+  }
+  
+  .kart-parts-container, .kart-info-container {
+    width: 100%;
+  }
+  
+  .parts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .kart-confirm-button {
+    padding: 12px 30px;
+    font-size: 16px;
+  }
+} 

@@ -1,0 +1,204 @@
+/* ItemDisplay.css */
+
+.item-display-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+}
+
+.item-display {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.item-box {
+  background-image: url('/imported/assets/craftpix-895410-free-jungle-cartoon-2d-game-ui/PNG/btn/medium.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.item-image {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+}
+
+.item-name {
+  font-size: 12px;
+  color: white;
+  text-shadow: 0 0 3px #000;
+  margin-top: 5px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.empty-item {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 3px #000;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Item acquisition animation */
+.item-acquisition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  z-index: 10;
+  animation: pulseOverlay 1s ease-in-out;
+}
+
+.item-acquisition-text {
+  color: #ffeb3b;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-shadow: 0 0 5px #000;
+  animation: popIn 0.5s ease-out;
+}
+
+.acquisition-item-image {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  animation: scaleIn 0.5s ease-out 0.2s both;
+}
+
+.acquisition-item-name {
+  font-size: 12px;
+  color: white;
+  text-shadow: 0 0 3px #000;
+  margin-top: 5px;
+  animation: fadeIn 0.5s ease-out 0.4s both;
+}
+
+/* Item obtained animation */
+.item-obtained {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Item used animation */
+.item-used {
+  animation: fadeOutSpin 0.5s ease-in-out;
+}
+
+/* Animations */
+@keyframes pulseOverlay {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes fadeOutSpin {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .item-display-container {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .item-name {
+    font-size: 10px;
+  }
+  
+  .empty-item {
+    font-size: 12px;
+  }
+  
+  .item-acquisition-text {
+    font-size: 12px;
+  }
+  
+  .acquisition-item-name {
+    font-size: 10px;
+  }
+} 

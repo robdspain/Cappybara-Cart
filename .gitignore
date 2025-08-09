@@ -1,0 +1,38 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Build output
+/dist/
+/build/
+**/dist/
+**/build/
+
+# Caches
+.eslintcache
+.cache/
+.tmp/
+
+# Env
+.env
+.env.*
+
+# TS build info
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Project-specific
+kart-3d/dist/

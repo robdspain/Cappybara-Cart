@@ -1,0 +1,10 @@
+{
+  "topSpeedScale": 1.0,
+  "gripScale": 1.0,
+  "tiers": [
+    { "name": "easy", "topSpeedScale": 0.97, "gripScale": 1.06 },
+    { "name": "normal", "topSpeedScale": 1.0, "gripScale": 1.0 },
+    { "name": "hard", "topSpeedScale": 1.05, "gripScale": 0.96 }
+  ]
+}
+

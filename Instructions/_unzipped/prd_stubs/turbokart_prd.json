@@ -1,0 +1,553 @@
+{
+  "project": {
+    "codename": "Project TurboKart",
+    "version": "1.0",
+    "date": "2025-08-09",
+    "platform": [
+      "WebGL2 (desktop-first)",
+      "PWA (optional)"
+    ],
+    "engine_recommendations": [
+      "Three.js",
+      "Babylon.js"
+    ],
+    "physics_recommendations": [
+      "cannon-es",
+      "ammo.js (WASM)"
+    ],
+    "language": "TypeScript",
+    "build_tool": "Vite"
+  },
+  "game_modes": {
+    "single_player": {
+      "ai_racers": 7,
+      "dynamic_difficulty": true
+    },
+    "local_multiplayer": {
+      "max_players": 4,
+      "split_screen": true,
+      "mixed_inputs": true
+    },
+    "online_multiplayer_future": {
+      "status": "deferred",
+      "notes": "Server-authoritative WebSocket; 20Hz snapshots"
+    }
+  },
+  "race_rules": {
+    "laps_per_race": 3,
+    "grid_size": 8,
+    "set_length_races": 3,
+    "points_table": [
+      10,
+      8,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "tiebreakers": [
+      "fastest_lap_overall",
+      "most_podiums",
+      "coin_toss_ui"
+    ]
+  },
+  "mechanics": {
+    "kart_stats": {
+      "accel_mps2": [
+        12,
+        14,
+        16
+      ],
+      "top_speed_mps": [
+        28,
+        30,
+        32
+      ],
+      "handling_coeff": [
+        0.85,
+        1.0,
+        1.15
+      ],
+      "boost_cap": 100,
+      "mass_kg": [
+        130,
+        160
+      ]
+    },
+    "drift": {
+      "drift_threshold": 0.35,
+      "slip_range": [
+        0.15,
+        0.35
+      ],
+      "mini_turbo_levels": [
+        {
+          "charge_s": 0.5,
+          "boost_s": 0.25
+        },
+        {
+          "charge_s": 1.2,
+          "boost_s": 0.5
+        },
+        {
+          "charge_s": 2.0,
+          "boost_s": 0.9
+        }
+      ]
+    },
+    "surfaces": {
+      "tarmac": {
+        "accel_mult": 1.0,
+        "grip_mult": 1.0
+      },
+      "boost_pad": {
+        "speed_instant_add_mps": 8.0,
+        "decay_s": 1.0
+      },
+      "mud": {
+        "accel_mult": 0.75,
+        "grip_mult": 0.8
+      },
+      "curb": {
+        "accel_mult": 0.9,
+        "grip_mult": 0.95
+      },
+      "ramp": {
+        "air_time": "ballistic_simple"
+      }
+    },
+    "collisions": {
+      "wall_scrape_slow_mps_per_s": 1.5,
+      "elastic_damping": 0.2
+    },
+    "landing_timing_boost_ms": 120
+  },
+  "items": {
+    "pool": [
+      "SpeedBoost",
+      "HomingMissile",
+      "Banana",
+      "Shield",
+      "Lightning",
+      "TripleThrowables"
+    ],
+    "weights_by_position_band": {
+      "1-2": {
+        "SpeedBoost": 45,
+        "HomingMissile": 5,
+        "Banana": 25,
+        "Shield": 20,
+        "Lightning": 0,
+        "TripleThrowables": 5
+      },
+      "3-4": {
+        "SpeedBoost": 30,
+        "HomingMissile": 15,
+        "Banana": 20,
+        "Shield": 20,
+        "Lightning": 5,
+        "TripleThrowables": 10
+      },
+      "5-6": {
+        "SpeedBoost": 20,
+        "HomingMissile": 25,
+        "Banana": 15,
+        "Shield": 15,
+        "Lightning": 10,
+        "TripleThrowables": 15
+      },
+      "7-8": {
+        "SpeedBoost": 10,
+        "HomingMissile": 30,
+        "Banana": 10,
+        "Shield": 10,
+        "Lightning": 20,
+        "TripleThrowables": 20
+      }
+    },
+    "behavior": {
+      "SpeedBoost": {
+        "speed_add_mps": 10,
+        "decay_s": 1.2,
+        "lockout_s": 2
+      },
+      "HomingMissile": {
+        "target_ahead_max_m": 120,
+        "speed_mps": 35,
+        "life_s": 4,
+        "counters": [
+          "Shield",
+          "terrain_break"
+        ]
+      },
+      "Banana": {
+        "modes": [
+          "drop",
+          "short_throw"
+        ],
+        "lifetime_s": 20,
+        "spin_out_s": 0.9
+      },
+      "Shield": {
+        "duration_s": 5,
+        "hits_absorbed": 1
+      },
+      "Lightning": {
+        "global": true,
+        "speed_mult": 0.7,
+        "handling_jitter_mult": 1.1,
+        "duration_s": 3.5
+      },
+      "TripleThrowables": {
+        "count": 3,
+        "cadence_s": 0.4
+      }
+    },
+    "anti_frustration": {
+      "lightning_cooldown_same_target_s": 20
+    }
+  },
+  "progression": {
+    "coins_per_place": [
+      20,
+      12,
+      8,
+      6,
+      5,
+      4,
+      3,
+      2
+    ],
+    "unlockable_characters": [
+      {
+        "name": "Sprinter",
+        "perk": {
+          "accel_pct": 3
+        }
+      },
+      {
+        "name": "Tank",
+        "perk": {
+          "armor_pct": 5
+        }
+      },
+      {
+        "name": "Slick",
+        "perk": {
+          "handling_pct": 4
+        }
+      },
+      {
+        "name": "Turbo",
+        "perk": {
+          "boost_cap_pct": 8
+        }
+      }
+    ],
+    "unlock_conditions": [
+      {
+        "character": "A",
+        "condition": "win_set_with_points>=24"
+      },
+      {
+        "character": "B",
+        "condition": "two_clean_laps_no_crash"
+      },
+      {
+        "character": "C",
+        "condition": "first_place_all_three_races_any_cup"
+      }
+    ],
+    "upgrades": {
+      "engine": [
+        {
+          "level": 1,
+          "top_speed_add_mps": 1.5,
+          "cost": 80
+        },
+        {
+          "level": 2,
+          "top_speed_add_mps": 1.5,
+          "cost": 140
+        },
+        {
+          "level": 3,
+          "top_speed_add_mps": 1.5,
+          "cost": 220
+        }
+      ],
+      "tires": [
+        {
+          "level": 1,
+          "handling_add": 0.08,
+          "cost": 70
+        },
+        {
+          "level": 2,
+          "handling_add": 0.08,
+          "cost": 120
+        },
+        {
+          "level": 3,
+          "handling_add": 0.08,
+          "cost": 180
+        }
+      ],
+      "turbo": [
+        {
+          "level": 1,
+          "boost_s_add": 0.25,
+          "cost": 60
+        },
+        {
+          "level": 2,
+          "boost_s_add": 0.25,
+          "cost": 100
+        },
+        {
+          "level": 3,
+          "boost_s_add": 0.25,
+          "cost": 160
+        }
+      ],
+      "armor": [
+        {
+          "level": 1,
+          "hit_slow_reduction_pct": 15,
+          "cost": 90
+        },
+        {
+          "level": 2,
+          "hit_slow_reduction_pct": 30,
+          "cost": 160
+        }
+      ]
+    }
+  },
+  "ai": {
+    "dda": {
+      "evaluate_interval": "each_lap_split",
+      "metrics": [
+        "player_pos_delta",
+        "avg_speed_diff",
+        "crash_count",
+        "lap_time_delta"
+      ],
+      "scales": {
+        "top_speed_pct": [
+          -6,
+          6
+        ],
+        "grip_pct": [
+          -6,
+          6
+        ]
+      },
+      "item_bias_shift": "one_band_stronger_or_weaker",
+      "aggression_range": [
+        0.3,
+        0.8
+      ]
+    },
+    "states": [
+      "DriveLine",
+      "Overtake",
+      "Defend",
+      "Recover",
+      "UseItem"
+    ],
+    "paths": {
+      "centerline_spline": true,
+      "overtake_lines": 2,
+      "node_data": [
+        "ideal_speed",
+        "drift_flag",
+        "danger_score"
+      ]
+    },
+    "homing_logic": {
+      "predictive_lead_s": 0.35,
+      "respect_shield_delay_s": 1.5
+    }
+  },
+  "tracks": [
+    {
+      "name": "Sunny Speedway",
+      "length_m": 900,
+      "difficulty": "Beginner",
+      "features": [
+        "wide_turns",
+        "2_drift_pads",
+        "1_ramp"
+      ],
+      "item_boxes": 18
+    },
+    {
+      "name": "Jungle Drift",
+      "length_m": 1050,
+      "difficulty": "Intermediate",
+      "features": [
+        "bridges",
+        "mud_zones",
+        "S_curves"
+      ],
+      "item_boxes": 20
+    },
+    {
+      "name": "City Circuit",
+      "length_m": 1100,
+      "difficulty": "Advanced",
+      "features": [
+        "chicanes",
+        "elevated_ramps",
+        "narrow_barriers"
+      ],
+      "item_boxes": 22
+    }
+  ],
+  "rendering": {
+    "style": "low_poly_cartoon",
+    "budgets": {
+      "character_tris": {
+        "base": 2000,
+        "lod1": 1200,
+        "lod2": 600
+      },
+      "kart_tris": {
+        "base": 1500,
+        "lod1": 900,
+        "lod2": 450
+      },
+      "track_tris_total": 60000
+    },
+    "materials": {
+      "toon_bands": 2,
+      "rim_light": true,
+      "outline_inverted_hull_scale": 0.03
+    },
+    "vfx": [
+      "boost_trails",
+      "skid_smoke",
+      "missile_trails",
+      "lightning_flash_clamped_100ms"
+    ],
+    "animations": [
+      "idle",
+      "steer_left",
+      "steer_right",
+      "hit_react",
+      "victory_pose",
+      "drift_pose"
+    ]
+  },
+  "ui_ux": {
+    "hud": [
+      "position",
+      "lap_X_of_3",
+      "speed_bar",
+      "item_slot",
+      "mini_map",
+      "coin_count"
+    ],
+    "mini_map": {
+      "render": "2D_ortho",
+      "icons_by_rank_color": true
+    },
+    "tally_screen": {
+      "bar_chart_anim": true,
+      "skip_enabled": true
+    },
+    "garage": {
+      "stat_bars": true,
+      "upgrade_highlight": true,
+      "confirm_hold": true
+    },
+    "accessibility": [
+      "colorblind_safe_icons",
+      "remap_inputs",
+      "caption_sfx_cues",
+      "toggle_screen_shake"
+    ]
+  },
+  "save_system": {
+    "local_storage": true,
+    "schema": {
+      "profileId": "string",
+      "coins": "number",
+      "unlockedCharacters": "string[]",
+      "upgrades": {
+        "engine": "0-3",
+        "tires": "0-3",
+        "turbo": "0-3",
+        "armor": "0-2"
+      },
+      "stats": {
+        "races": "number",
+        "wins": "number",
+        "bestLaps": {
+          "Sunny": "seconds"
+        }
+      },
+      "settings": {
+        "a11y": {
+          "shake": "bool",
+          "cbMode": "string"
+        },
+        "input": "string"
+      }
+    }
+  },
+  "performance_budget": {
+    "fps_target": 60,
+    "frame_ms_budget": {
+      "physics_ms": 3,
+      "render_ms": 9,
+      "scripts_ai_ms": 3,
+      "audio_ui_ms": 1.6
+    },
+    "techniques": [
+      "frustum_culling",
+      "instancing",
+      "dynamic_resolution_split_screen",
+      "object_pooling",
+      "ktx2_textures",
+      "draco_glTF",
+      "lod_groups",
+      "static_batching"
+    ]
+  },
+  "pipelines": {
+    "content_authoring": {
+      "track_export": {
+        "format": "glTF + JSON",
+        "json_fields": [
+          "spline",
+          "checkpoints",
+          "surfaces",
+          "pads",
+          "item_positions"
+        ]
+      }
+    },
+    "telemetry": {
+      "events": [
+        "race_start",
+        "lap_complete",
+        "item_roll",
+        "item_use",
+        "hit",
+        "offroad",
+        "finish_place",
+        "coins_awarded",
+        "upgrade_purchase",
+        "best_lap_update"
+      ]
+    }
+  },
+  "monetization": {
+    "model": "free",
+    "cosmetics_future": true
+  }
+}

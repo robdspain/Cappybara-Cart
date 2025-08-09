@@ -1,0 +1,34 @@
+{
+  "1-2": {
+    "SpeedBoost": 45,
+    "HomingMissile": 5,
+    "Banana": 25,
+    "Shield": 20,
+    "Lightning": 0,
+    "TripleThrowables": 5
+  },
+  "3-4": {
+    "SpeedBoost": 30,
+    "HomingMissile": 15,
+    "Banana": 20,
+    "Shield": 20,
+    "Lightning": 5,
+    "TripleThrowables": 10
+  },
+  "5-6": {
+    "SpeedBoost": 20,
+    "HomingMissile": 25,
+    "Banana": 15,
+    "Shield": 15,
+    "Lightning": 10,
+    "TripleThrowables": 15
+  },
+  "7-8": {
+    "SpeedBoost": 10,
+    "HomingMissile": 30,
+    "Banana": 10,
+    "Shield": 10,
+    "Lightning": 20,
+    "TripleThrowables": 20
+  }
+}

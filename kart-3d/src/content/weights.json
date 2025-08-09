@@ -1,0 +1,22 @@
+{
+  "bands": [
+    {
+      "range": [1, 2],
+      "weights": { "Boost": 45, "Homing": 5, "Banana": 25, "Shield": 20, "Lightning": 0, "Triples": 5 }
+    },
+    {
+      "range": [3, 4],
+      "weights": { "Boost": 30, "Homing": 15, "Banana": 20, "Shield": 20, "Lightning": 5, "Triples": 10 }
+    },
+    {
+      "range": [5, 6],
+      "weights": { "Boost": 20, "Homing": 25, "Banana": 15, "Shield": 15, "Lightning": 10, "Triples": 15 }
+    },
+    {
+      "range": [7, 8],
+      "weights": { "Boost": 10, "Homing": 30, "Banana": 10, "Shield": 10, "Lightning": 20, "Triples": 20 }
+    }
+  ],
+  "cooldowns": { "Lightning": 20000, "Shield": 8000 }
+}
+
