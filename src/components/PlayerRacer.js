@@ -68,7 +68,6 @@ const PlayerRacer = forwardRef(({
     boostLevel: 0, // 0 = no boost, 1 = blue, 2 = orange, 3 = purple
     boostTime: 0
   });
-  // eslint-disable-next-line no-unused-vars
   const [coins, setCoins] = useState(0);
   const [boostTime, setBoostTime] = useState(0);
   // eslint-disable-next-line no-unused-vars
@@ -594,8 +593,10 @@ const PlayerRacer = forwardRef(({
     
     // Limit maximum speed
     const currentSpeed = kartPhysics.velocity.length();
-    const maxSpeedWithBoost = kartPhysics.maxSpeed * 
-                             (kartPhysics.boostLevel > 0 ? 
+    // Coins increase top speed (SNES Mario Kart mechanic)
+    const coinSpeedBonus = Math.min(coins, 10) * 0.5; // Up to +5 speed from 10 coins
+    const maxSpeedWithBoost = (kartPhysics.maxSpeed + coinSpeedBonus) *
+                             (kartPhysics.boostLevel > 0 ?
                               kartPhysics.boostMultipliers[kartPhysics.boostLevel] : 1.0);
     
     if (currentSpeed > maxSpeedWithBoost) {
@@ -631,6 +632,8 @@ const PlayerRacer = forwardRef(({
         lastValidPositionRef.current = [...newPosition];
       } else {
         // Off-track - speed penalty will be applied below
+        // Lose a coin when going off-track (checked once per transition)
+        setCoins(prev => Math.max(0, prev - 1));
       }
     }
     
@@ -740,7 +743,16 @@ const PlayerRacer = forwardRef(({
     
     // Report position to parent for camera following, minimap, etc.
     if (onPositionUpdate) {
-      onPositionUpdate(newPosition, [0, playerGroup.rotation.y, 0]);
+      onPositionUpdate({
+        position: newPosition,
+        angle: playerGroup.rotation.y,
+        speed: kartPhysics.velocity.length(),
+        lap: lap,
+        coins: coins,
+        isOnTrack: trackResult.isOnTrack,
+        isDrifting: kartPhysics.isDrifting,
+        driftBoostLevel: kartPhysics.boostLevel
+      });
     }
   });
   
@@ -819,8 +831,12 @@ const PlayerRacer = forwardRef(({
       const worldEuler = new THREE.Euler();
       worldEuler.setFromQuaternion(worldQuat);
       return worldEuler;
-    }
-  }), []);
+    },
+    collectCoin: () => {
+      setCoins(prev => Math.min(prev + 1, 10)); // Max 10 coins like SNES
+    },
+    getCoinCount: () => coins,
+  }), [coins]);
 
   // Update position for camera tracking with null checks
   useFrame(() => {

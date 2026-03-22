@@ -136,6 +136,7 @@ const CharacterDetails = ({ character }) => {
 // Main character selection component
 const CharacterSelect = ({ onSelect, onConfirm }) => {
   const [selectedCharacter, setSelectedCharacter] = useState(CHARACTERS[0]);
+  const [speedClass, setSpeedClass] = useState('100cc');
   
   const handleSelect = (character) => {
     setSelectedCharacter(character);
@@ -143,7 +144,7 @@ const CharacterSelect = ({ onSelect, onConfirm }) => {
   };
   
   const handleConfirm = () => {
-    if (onConfirm) onConfirm(selectedCharacter);
+    if (onConfirm) onConfirm({ ...selectedCharacter, speedClass });
   };
   
   return (
@@ -165,7 +166,34 @@ const CharacterSelect = ({ onSelect, onConfirm }) => {
         <CharacterDetails character={selectedCharacter} />
       </div>
       
-      <button 
+      <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+        <h3 style={{ color: 'white', marginBottom: '10px' }}>Speed Class</h3>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          {['50cc', '100cc', '150cc'].map(cc => (
+            <button
+              key={cc}
+              onClick={() => setSpeedClass(cc)}
+              style={{
+                padding: '10px 20px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                background: speedClass === cc
+                  ? 'linear-gradient(180deg, #FF9800 0%, #F57C00 100%)'
+                  : 'linear-gradient(180deg, #555 0%, #333 100%)',
+                color: 'white',
+                border: speedClass === cc ? '2px solid #FFD54F' : '2px solid #555',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {cc}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button
         className="confirm-button"
         onClick={handleConfirm}
       >

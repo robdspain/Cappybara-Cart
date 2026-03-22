@@ -506,6 +506,7 @@ const GameScene = ({
       angle: playerData.angle || 0,
       lap: playerData.lap || 0,
       speed: playerData.speed || 0,
+      coins: playerData.coins || 0,
       isOnTrack: playerData.isOnTrack || false,
       isDrifting: playerData.isDrifting || false,
       driftBoostLevel: playerData.driftBoostLevel || 0
@@ -528,15 +529,17 @@ const GameScene = ({
           angle: safePlayerData.angle,
           lap: safePlayerData.lap,
           speed: safePlayerData.speed,
+          coins: safePlayerData.coins,
           isOnTrack: safePlayerData.isOnTrack,
           position: safePlayerData.position,
           isDrifting: safePlayerData.isDrifting,
           driftBoostLevel: safePlayerData.driftBoostLevel
         };
-        
+
         // Update race data for HUD with safe values
         onRaceDataUpdate({
-          currentLap: safePlayerData.lap
+          currentLap: safePlayerData.lap,
+          coins: safePlayerData.coins
         });
       }
       
@@ -858,6 +861,42 @@ const GameScene = ({
     // playSound('shellHit.mp3');
   };
   
+  // Calculate race positions based on lap progress and track distance
+  useFrame(() => {
+    if (raceState !== 'racing' || !racers || racers.length === 0) return;
+
+    const trackPathLength = trackData.path.length;
+
+    // Calculate a "progress score" for each racer
+    const scored = racers.map(racer => {
+      const lapScore = (racer.lap || 0) * 1000;
+      // For AI racers, estimate progress from their position
+      let waypointScore = 0;
+      if (!racer.isPlayer && racer.position) {
+        // Rough estimate based on distance from track center
+        const pos = Array.isArray(racer.position) ? racer.position : [0, 0, 0];
+        const angle = Math.atan2(pos[0], pos[2]);
+        waypointScore = ((angle + Math.PI) / (Math.PI * 2)) * trackPathLength;
+      }
+      return { ...racer, progressScore: lapScore + waypointScore };
+    });
+
+    // Sort by progress (higher = further ahead)
+    scored.sort((a, b) => b.progressScore - a.progressScore);
+
+    // Assign positions
+    const positioned = scored.map((racer, idx) => ({
+      ...racer,
+      racePosition: idx + 1
+    }));
+
+    // Update only if positions changed
+    const playerRacer = positioned.find(r => r.isPlayer);
+    if (playerRacer) {
+      onRaceDataUpdate({ playerPosition: playerRacer.racePosition });
+    }
+  });
+
   // Update projectiles
   useFrame((state, delta) => {
     setActiveItems(prevItems => {
@@ -1398,14 +1437,15 @@ const Game3DCanvas = ({ onGameOver }) => {
         />
         
         {/* Race HUD - Outside the Canvas */}
-        <RaceHUD 
-          playerPosition={currentRaceData?.playerPosition} 
+        <RaceHUD
+          playerPosition={currentRaceData?.playerPosition}
           currentLap={currentRaceData?.currentLap}
           totalLaps={currentRaceData?.totalLaps}
           raceTime={currentRaceData?.raceTime}
           raceState={currentRaceData?.raceState}
           playerItem={currentRaceData?.playerItem}
           countdown={currentRaceData?.countdown}
+          coins={currentRaceData?.coins || 0}
           character={characterInfo}
           kartConfig={kartConfigForGameScene}
         />

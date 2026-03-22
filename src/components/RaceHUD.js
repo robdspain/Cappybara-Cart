@@ -21,7 +21,8 @@ const RaceHUD = ({
   showItemObtainedAnimation = false,
   boostRemaining = 0,
   maxBoost = 3000,
-  lapTimes = []
+  lapTimes = [],
+  coins = 0
 }) => {
   // Format race time (milliseconds to MM:SS.mmm)
   const formatRaceTime = (time) => {
@@ -61,6 +62,25 @@ const RaceHUD = ({
   
   return (
     <div className="race-hud">
+      <div style={{
+        position: 'absolute',
+        bottom: '100px',
+        left: '20px',
+        background: 'rgba(0,0,0,0.6)',
+        padding: '8px 16px',
+        borderRadius: '10px',
+        color: '#FFD700',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        zIndex: 100,
+        pointerEvents: 'none'
+      }}>
+        <span style={{ fontSize: '24px' }}>&#9679;</span>
+        <span>{coins}/10</span>
+      </div>
       <div className="hud-section hud-top">
         <div className="lap-counter">
           <div className="counter-label">LAP</div>
