@@ -24,33 +24,9 @@
     <script src="%PUBLIC_URL%/textures/sand.js"></script>
     <script src="%PUBLIC_URL%/textures/water.js"></script>
     <style>
-      /* Add styles for the focus button */
-      #focus-button {
-        position: absolute;
-        bottom: 70px;
-        left: 20px;
-        z-index: 1000;
-        padding: 8px 16px;
-        background-color: #39A649;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-      }
-      
-      #force-start-button {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        z-index: 1000;
-        padding: 8px 16px;
-        background-color: #E74C3C;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
+      /* Game canvas styles */
+      canvas:focus {
+        outline: none;
       }
     </style>
   </head>
@@ -104,68 +80,17 @@
       })();
     </script>
     
-    <!-- Focus button to help capture keyboard events -->
-    <button id="focus-button" onclick="focusCanvas()">CLICK HERE TO FOCUS</button>
-    
-    <!-- Force race start button -->
-    <button id="force-start-button" onclick="startRace()">FORCE RACE START</button>
-    
     <script>
-      function focusCanvas() {
-        // Find the canvas element and focus it
+      // Auto-focus canvas when it appears
+      const observer = new MutationObserver(() => {
         const canvas = document.querySelector('canvas');
-        if (canvas) {
+        if (canvas && !canvas.hasAttribute('data-focused')) {
+          canvas.setAttribute('tabindex', '0');
+          canvas.setAttribute('data-focused', 'true');
           canvas.focus();
-          canvas.setAttribute('tabindex', '0'); // Make canvas focusable
-          console.log("Canvas focused via button click");
-
-          // Force the game to recognize that keys should start working
-          // This will trigger key events that the game can process
-          const forceKeyEvent = (key) => {
-            // Create keydown event
-            const keyDownEvent = new KeyboardEvent('keydown', {
-              code: key,
-              key: key,
-              bubbles: true,
-              cancelable: true
-            });
-            // Create keyup event
-            const keyUpEvent = new KeyboardEvent('keyup', {
-              code: key,
-              key: key,
-              bubbles: true,
-              cancelable: true
-            });
-            
-            // Dispatch events
-            window.dispatchEvent(keyDownEvent);
-            setTimeout(() => window.dispatchEvent(keyUpEvent), 10);
-            
-            console.log(`Sent force key event for: ${key}`);
-          };
-          
-          // Send events for arrow keys to initialize them
-          setTimeout(() => {
-            forceKeyEvent('ArrowUp');
-            forceKeyEvent('ArrowDown');
-            forceKeyEvent('ArrowLeft');
-            forceKeyEvent('ArrowRight');
-          }, 100);
         }
-      }
-      
-      function startRace() {
-        // Call the global function exposed by Game3DCanvas
-        if (window.forceRaceStart) {
-          window.forceRaceStart();
-          console.log("Force race start triggered via button");
-          
-          // Focus the canvas after starting the race
-          setTimeout(focusCanvas, 500);
-        } else {
-          console.error("forceRaceStart function not found!");
-        }
-      }
+      });
+      observer.observe(document.getElementById('root'), { childList: true, subtree: true });
     </script>
   </body>
 </html> 

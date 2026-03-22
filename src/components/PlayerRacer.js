@@ -201,8 +201,6 @@ const PlayerRacer = forwardRef(({
     kartPhysics.mass = stats.weight;
     kartPhysics.groundFriction = stats.traction;
     kartPhysics.driftChargeRate = stats.driftEfficiency * 40;
-    
-    console.log("Kart stats set:", stats);
   }, [calculateKartStats]);
   
   // Reference to keys pressed
@@ -217,119 +215,41 @@ const PlayerRacer = forwardRef(({
     z: false
   });
   
-  // Direct reference for debugging
-  window.playerObject = groupRef;
-  window.playerPosition = positionRef;
-  window.keysPressed = keysPressed;
-  window.kartPhysics = kartPhysics;
-  
   // Update race state from props
   useEffect(() => {
-    console.log(`Race active state changed to: ${raceActive}`);
-    
-    // Update local state
     setIsRaceStarted(raceActive);
-    
-    // If the race has started, ensure we're listening for key events properly
-    if (raceActive) {
-      console.log("Race started - ensuring keyboard controls are active");
-      
-      // Force re-register event listeners for keyboard to ensure they're active
-      const dummyKeyDown = new KeyboardEvent('keydown', { code: 'ArrowUp' });
-      const dummyKeyUp = new KeyboardEvent('keyup', { code: 'ArrowUp' });
-      
-      // Dispatch dummy events to ensure listeners are active
-      window.dispatchEvent(dummyKeyDown);
-      window.dispatchEvent(dummyKeyUp);
-    }
   }, [raceActive]);
   
-  // Initialize camera and controls
+  // Initialize camera
   useEffect(() => {
     if (!controlsRef.current) {
-      // Create a simple fixed camera position instead of pointer lock controls
-      // This will make it easier to control without clicking focus
-      camera.position.set(0, 3, 15); // Position behind and above the kart
+      camera.position.set(0, 3, 15);
       camera.lookAt(0, 0, 0);
-      
-      // Expose for debugging
-      window.camera = camera;
-      
-      // Automatically enable keyboard input without needing focus
+
+      // Auto-focus canvas for keyboard input
       const canvasElement = document.querySelector('canvas');
       if (canvasElement) {
+        canvasElement.setAttribute('tabindex', '0');
         canvasElement.focus();
-        console.log("Canvas focused automatically");
       }
-      
-      return () => {
-        // Cleanup
-      };
     }
   }, [camera]);
   
-  // Remove auto-acceleration, as it might interfere with manual controls
+  // Initialize key state
   useEffect(() => {
-    console.log('Initializing player racer controls');
-    
-    // Instead of auto-accelerating, make a log to check initialization
-    console.log('Player racer controls initialized, waiting for input');
-    
-    // Ensure the keysPressed ref is initialized properly
     keysPressed.current = {
       ArrowUp: false,
       ArrowDown: false,
-      ArrowLeft: false, 
+      ArrowLeft: false,
       ArrowRight: false,
       Space: false,
       ShiftLeft: false,
       KeyZ: false
     };
-    
-    // Log the current state for debugging
-    console.log('Initial key state:', keysPressed.current);
-    
-    return () => {
-      // Reset key state if component unmounts
-      console.log('Cleaning up player racer controls');
-    };
   }, []);
 
-  // Global key debugging - make this more visible
-  useEffect(() => {
-    // Global keydown listener for debugging
-    const debugKeyListener = (e) => {
-      console.log(`GLOBAL KEY DEBUG: ${e.code} pressed`);
-      
-      // Force update the keysPressed ref directly
-      if (e.code in keysPressed.current) {
-        console.log(`Updating key state for ${e.code} to true`);
-        keysPressed.current[e.code] = true;
-      }
-    };
-    
-    const debugKeyUpListener = (e) => {
-      console.log(`GLOBAL KEY DEBUG: ${e.code} released`);
-      
-      // Force update the keysPressed ref directly
-      if (e.code in keysPressed.current) {
-        console.log(`Updating key state for ${e.code} to false`);
-        keysPressed.current[e.code] = false;
-      }
-    };
-    
-    window.addEventListener('keydown', debugKeyListener);
-    window.addEventListener('keyup', debugKeyUpListener);
-    
-    return () => {
-      window.removeEventListener('keydown', debugKeyListener);
-      window.removeEventListener('keyup', debugKeyUpListener);
-    };
-  }, []);
-  
   // Handle keyboard input
   useEffect(() => {
-    console.log('Setting up keyboard event handlers for kart physics');
     
     // Use a simpler, direct approach for key detection
     const keysRef = keysPressed.current;
@@ -340,35 +260,28 @@ const PlayerRacer = forwardRef(({
         case 'ArrowUp':
         case 'KeyW':
           keysRef.ArrowUp = true;
-          console.log('Accelerate');
           break;
         case 'ArrowDown':
         case 'KeyS':
           keysRef.ArrowDown = true;
-          console.log('Brake');
           break;
         case 'ArrowLeft':
         case 'KeyA':
           keysRef.ArrowLeft = true;
-          console.log('Turn left');
           break;
         case 'ArrowRight':
         case 'KeyD':
           keysRef.ArrowRight = true;
-          console.log('Turn right');
           break;
         case 'Space':
-          keysRef.Space = true; // Handbrake/drift
-          console.log('Drift initiated');
-          
-          // Start drifting if we're turning
+          keysRef.Space = true;
           if (keysRef.ArrowLeft || keysRef.ArrowRight) {
             startDrift();
           }
           break;
         case 'ShiftLeft':
         case 'ShiftRight':
-          keysRef.ShiftLeft = true; // Boost
+          keysRef.ShiftLeft = true;
           break;
         case 'KeyZ':
           keysRef.z = true;
@@ -377,7 +290,7 @@ const PlayerRacer = forwardRef(({
           }
           break;
         default:
-          return; // Don't prevent default for other keys
+          return;
       }
       
       // Prevent default browser behavior for game controls
@@ -480,33 +393,7 @@ const PlayerRacer = forwardRef(({
         boostTime: 0
       });
       
-      // Play drift sound - with enhanced error handling
-      try {
-        const driftSound = new Audio('/sounds/drift.mp3');
-        driftSound.volume = 0.2;
-        
-        // Add error event handler
-        driftSound.onerror = (e) => {
-          console.warn("Error loading drift sound:", e);
-          // Continue game logic even if sound fails
-        };
-        
-        // Only try to play if not muted
-        const playPromise = driftSound.play();
-        
-        // Handle the promise returned by play()
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.warn("Drift sound failed to play:", error);
-            // Sound playback failed - continue game logic
-          });
-        }
-      } catch (e) {
-        console.warn("Drift sound system error:", e);
-        // Continue game logic even if sound system fails
-      }
-      
-      console.log(`Drift started: direction ${kartPhysics.driftDirection}`);
+      // Drift started
     }
   };
   
@@ -543,33 +430,7 @@ const PlayerRacer = forwardRef(({
       kartPhysics.boostLevel = boostLevel;
       kartPhysics.boostTimeRemaining = boostTime;
       
-      // Play boost sound - with enhanced error handling
-      try {
-        const boostSound = new Audio('/sounds/boost.mp3');
-        boostSound.volume = 0.3;
-        
-        // Add error event handler
-        boostSound.onerror = (e) => {
-          console.warn("Error loading boost sound:", e);
-          // Continue game logic even if sound fails
-        };
-        
-        // Only try to play if not muted
-        const playPromise = boostSound.play();
-        
-        // Handle the promise returned by play()
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.warn("Boost sound failed to play:", error);
-            // Sound playback failed - continue game logic
-          });
-        }
-      } catch (e) {
-        console.warn("Boost sound system error:", e);
-        // Continue game logic even if sound system fails
-      }
-      
-      console.log(`Boost activated: Level ${boostLevel}, Duration ${boostTime}s`);
+      // Boost activated
     }
     
     // Update state for UI
@@ -593,17 +454,10 @@ const PlayerRacer = forwardRef(({
     const playerGroup = groupRef.current;
     const keysRef = keysPressed.current;
     
-    // Log key states periodically for debugging
+    // Periodic state check
     const now = Date.now();
-    if (now - lastKeyDebugLog.current > 2000) { // Log every 2 seconds
-      console.log("Current key states:", JSON.stringify(keysRef));
+    if (now - lastKeyDebugLog.current > 2000) {
       lastKeyDebugLog.current = now;
-      
-      // If no keys are pressed, forcibly check keyboard listeners are working
-      const anyKeyPressed = Object.values(keysRef).some(v => v);
-      if (!anyKeyPressed && raceActive) {
-        console.log("No keys detected as pressed - keyboard events may not be working");
-      }
     }
     
     // PERMANENT FIX: Allow movement regardless of race state
@@ -779,31 +633,7 @@ const PlayerRacer = forwardRef(({
       if (trackResult.isOnTrack) {
         lastValidPositionRef.current = [...newPosition];
       } else {
-        // Play off-track sound - with enhanced error handling
-        try {
-          const offTrackSound = new Audio('/sounds/offtrack.mp3');
-          offTrackSound.volume = 0.1;
-          
-          // Add error event handler
-          offTrackSound.onerror = (e) => {
-            console.warn("Error loading offtrack sound:", e);
-            // Continue game logic even if sound fails
-          };
-          
-          // Only try to play if not muted
-          const playPromise = offTrackSound.play();
-          
-          // Handle the promise returned by play()
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.warn("Off track sound failed to play:", error);
-              // Sound playback failed - continue game logic
-            });
-          }
-        } catch (e) {
-          console.warn("Off track sound system error:", e);
-          // Continue game logic even if sound system fails
-        }
+        // Off-track - speed penalty will be applied below
       }
     }
     
@@ -965,26 +795,6 @@ const PlayerRacer = forwardRef(({
     }
   };
 
-  // Add a periodic key state logger to help debug keyboard issues
-  useEffect(() => {
-    if (!raceActive) return;
-
-    // Set up a periodic logger to check key states
-    const keyStateLogInterval = setInterval(() => {
-      // Use keysPressed.current directly without redeclaring
-      console.log("Current key states:", JSON.stringify(keysPressed.current));
-      
-      // If no keys are pressed, forcibly check keyboard listeners are working
-      const anyKeyPressed = Object.values(keysPressed.current).some(v => v);
-      if (!anyKeyPressed && raceActive) {
-        console.log("No keys detected as pressed - keyboard events may not be working");
-      }
-    }, 2000); // Log every 2 seconds
-    
-    return () => {
-      clearInterval(keyStateLogInterval);
-    };
-  }, [raceActive]);
 
   // Initialize the group ref with a new THREE.Group
   useEffect(() => {

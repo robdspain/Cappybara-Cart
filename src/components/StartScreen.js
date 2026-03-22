@@ -4,23 +4,22 @@ const StartScreen = ({ onStart }) => {
   return (
     <div className="start-screen">
       <h1>Capybara Kart</h1>
-      <p>Race your capybara around the track!</p>
+      <p>Race your capybara to victory!</p>
       <div className="instructions">
-        <h3>How to Play:</h3>
+        <h3>Controls</h3>
         <ul>
-          <li>Use arrow keys to drive</li>
-          <li>↑ Accelerate, ↓ Brake/Reverse</li>
-          <li>← Turn Left, → Turn Right</li>
-          <li>Avoid obstacles and track boundaries</li>
-          <li>The game ends after 60 seconds</li>
+          <li><strong>W / Arrow Up</strong> - Accelerate</li>
+          <li><strong>S / Arrow Down</strong> - Brake / Reverse</li>
+          <li><strong>A/D / Arrow Left/Right</strong> - Steer</li>
+          <li><strong>Space</strong> - Drift (hold while turning)</li>
+          <li><strong>Z</strong> - Use Item</li>
         </ul>
-        <h3>3D Mode Features:</h3>
+        <h3>Tips</h3>
         <ul>
-          <li>Immersive 3D environment with sky and stars</li>
-          <li>Realistic physics with acceleration and drift</li>
-          <li>Particle effects for engine exhaust</li>
-          <li>Advanced lighting and shadows</li>
-          <li>Detailed capybara model with animations</li>
+          <li>Drift through turns to charge a speed boost</li>
+          <li>Collect item boxes for power-ups</li>
+          <li>Stay on the track for maximum speed</li>
+          <li>Complete 3 laps to finish the race</li>
         </ul>
       </div>
       <button className="start-button" onClick={onStart}>
@@ -30,4 +29,4 @@ const StartScreen = ({ onStart }) => {
   );
 };
 
-export default StartScreen; 
+export default StartScreen;

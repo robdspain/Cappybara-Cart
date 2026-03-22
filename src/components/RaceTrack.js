@@ -53,35 +53,35 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
       
-      // Track asphalt background
-      ctx.fillStyle = '#555555';
+      // Track asphalt background with realistic texture
+      ctx.fillStyle = '#404040';
       ctx.fillRect(0, 0, 512, 512);
-      
-      // Add racing stripes
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 6;
-      
-      // Checkered pattern for finish line
-      for (let i = 0; i < 512; i += 32) {
-        for (let j = 0; j < 512; j += 32) {
-          if ((i + j) % 64 === 0) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(i, j, 32, 32);
-          }
-        }
+
+      // Add asphalt grain/noise for realism
+      for (let i = 0; i < 3000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const size = Math.random() * 2 + 0.5;
+        const shade = Math.floor(Math.random() * 30 + 50);
+        ctx.fillStyle = `rgb(${shade}, ${shade}, ${shade})`;
+        ctx.fillRect(x, y, size, size);
       }
-      
-      // Edge markers
-      for (let i = 0; i < 512; i += 64) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(16, i);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(496, i);
-        ctx.lineTo(512, i);
-        ctx.stroke();
+
+      // Center dashed line
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([20, 20]);
+      ctx.beginPath();
+      ctx.moveTo(256, 0);
+      ctx.lineTo(256, 512);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Edge lines (red and white curb pattern)
+      for (let i = 0; i < 512; i += 32) {
+        ctx.fillStyle = i % 64 === 0 ? '#E53935' : '#FFFFFF';
+        ctx.fillRect(0, i, 12, 32);
+        ctx.fillRect(500, i, 12, 32);
       }
       
       // Create the track texture
@@ -96,18 +96,21 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
       grassCanvas.height = 128;
       const grassCtx = grassCanvas.getContext('2d');
       
-      // Base green
-      grassCtx.fillStyle = '#4CAF50';
+      // Base green with gradient
+      const grassGradient = grassCtx.createRadialGradient(64, 64, 0, 64, 64, 90);
+      grassGradient.addColorStop(0, '#4CAF50');
+      grassGradient.addColorStop(1, '#388E3C');
+      grassCtx.fillStyle = grassGradient;
       grassCtx.fillRect(0, 0, 128, 128);
-      
-      // Add texture/noise
-      for (let i = 0; i < 1000; i++) {
+
+      // Add grass blade texture
+      for (let i = 0; i < 1500; i++) {
         const x = Math.random() * 128;
         const y = Math.random() * 128;
-        const size = Math.random() * 3 + 1;
-        
-        grassCtx.fillStyle = Math.random() > 0.5 ? '#388E3C' : '#81C784';
-        grassCtx.fillRect(x, y, size, size);
+        const height = Math.random() * 4 + 1;
+        const shade = Math.random();
+        grassCtx.fillStyle = shade > 0.6 ? '#66BB6A' : shade > 0.3 ? '#388E3C' : '#2E7D32';
+        grassCtx.fillRect(x, y, 1, height);
       }
       
       const grassTexture = new THREE.CanvasTexture(grassCanvas);

@@ -24,80 +24,6 @@ import useAudioManager from './utils/AudioManager';
 import { useAudio } from './utils/useAudio';
 import { TerrainModels, VegetationModels } from './utils/ModelLoader';
 
-// Add this new component here
-const KeyboardDebugger = () => {
-  const [keys, setKeys] = useState({});
-  
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      setKeys(prev => ({ ...prev, [e.code]: true }));
-    };
-    
-    const handleKeyUp = (e) => {
-      setKeys(prev => ({ ...prev, [e.code]: false }));
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
-  
-  return (
-    <div style={{
-      position: 'absolute',
-      top: 10,
-      left: 10,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      color: 'white',
-      padding: 10,
-      fontFamily: 'monospace',
-      zIndex: 1000
-    }}>
-      <h3>Keyboard Input Debug</h3>
-      <div>
-        {Object.entries(keys)
-          .filter(([_, isPressed]) => isPressed)
-          .map(([key]) => (
-            <div key={key} style={{ color: '#00FF00' }}>{key} PRESSED</div>
-          ))
-        }
-        {Object.entries(keys).length === 0 && (
-          <div>No keys pressed</div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Add this new component
-const MovingDebugObject = () => {
-  const ref = useRef();
-  const [position, setPosition] = useState([0, 2, 0]);
-  
-  // Move in a circular pattern
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    const x = Math.sin(time * 0.5) * 5;
-    const z = Math.cos(time * 0.5) * 5;
-    setPosition([x, 2, z]);
-    
-    if (ref.current) {
-      ref.current.position.set(x, 2, z);
-    }
-  });
-  
-  return (
-    <mesh ref={ref} position={position}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="blue" />
-    </mesh>
-  );
-};
-
 // Enhanced Lighting with environment
 const AdvancedLighting = () => {
   return (
@@ -323,45 +249,40 @@ const GameScene = ({
 
   // Camera settings
   const cameraSettings = useMemo(() => ({
-    distance: 5,
-    height: 2,
-    smoothing: 0.1,
-    defaultPosition: [0, 2, 10],
-    defaultLookAt: [0, 0, 0]
+    distance: 7,
+    height: 3,
+    smoothing: 0.08,
+    lookAhead: 4
   }), []);
 
-  // Camera position state
-  const [cameraPosition, setCameraPosition] = useState([0, cameraSettings.height, cameraSettings.distance]);
-  const [cameraLookAt, setCameraLookAt] = useState([0, 0, 0]);
+  // Persistent camera look-at target for smooth interpolation
+  const cameraLookAtRef = useRef(new THREE.Vector3(0, 1, 0));
 
   // Add camera update logic in useFrame
   useFrame(() => {
     if (!cameraRef.current || !playerRef.current) return;
 
-    const playerPosition = playerRef.current.position || new THREE.Vector3();
-    const playerRotation = playerRef.current.rotation || new THREE.Euler();
+    const playerPos = playerRef.current.position || new THREE.Vector3();
+    const playerRot = playerRef.current.rotation || new THREE.Euler();
 
-    // Calculate target camera position
+    // Calculate target camera position behind and above player
     const targetPosition = new THREE.Vector3(
-      playerPosition.x - Math.sin(playerRotation.y) * cameraSettings.distance,
-      playerPosition.y + cameraSettings.height,
-      playerPosition.z - Math.cos(playerRotation.y) * cameraSettings.distance
+      playerPos.x - Math.sin(playerRot.y) * cameraSettings.distance,
+      playerPos.y + cameraSettings.height,
+      playerPos.z - Math.cos(playerRot.y) * cameraSettings.distance
     );
 
-    // Calculate look-at position (slightly ahead of player)
-    const lookAtPosition = new THREE.Vector3(
-      playerPosition.x + Math.sin(playerRotation.y) * 2,
-      playerPosition.y + 1,
-      playerPosition.z + Math.cos(playerRotation.y) * 2
+    // Calculate look-at position (ahead of player)
+    const lookAtTarget = new THREE.Vector3(
+      playerPos.x + Math.sin(playerRot.y) * cameraSettings.lookAhead,
+      playerPos.y + 0.5,
+      playerPos.z + Math.cos(playerRot.y) * cameraSettings.lookAhead
     );
 
-    // Smoothly interpolate camera position
+    // Smoothly interpolate camera position and look-at
     cameraRef.current.position.lerp(targetPosition, cameraSettings.smoothing);
-    
-    // Update camera look-at
-    const currentLookAt = new THREE.Vector3();
-    currentLookAt.lerp(lookAtPosition, cameraSettings.smoothing);
-    cameraRef.current.lookAt(currentLookAt);
+    cameraLookAtRef.current.lerp(lookAtTarget, cameraSettings.smoothing);
+    cameraRef.current.lookAt(cameraLookAtRef.current);
   });
 
   // Initialize player position and rotation with safe defaults
@@ -512,36 +433,21 @@ const GameScene = ({
     }
   }, [parentRaceState, raceState]);
   
-  // Modified race state transitions
+  // Race state transitions
   useEffect(() => {
-    if (raceState === 'waiting') {
-      // Don't automatically transition to countdown
-      // Parent component will control this now
-      console.log('GameScene: waiting for parent component signal');
-      // Play menu music
-      playMusic('main_theme', { fadeIn: 1 });
-    }
-    
     if (raceState === 'countdown') {
-      console.log('GameScene: in countdown state');
-      // Let parent component handle the countdown
-      playSfx('race_start');
+      try { playSfx('race_start'); } catch(e) {}
     }
-    
+
     if (raceState === 'racing' && !raceStartedRef.current) {
-      console.log('GameScene: race has started');
       raceStartedRef.current = true;
-      // Start the race timer
       setRaceStartTime(Date.now());
       onRaceStart && onRaceStart();
-      
-      // Play race music
-      playMusic('furious_fass', { fadeIn: 1 });
+      try { playMusic('furious_fass', { fadeIn: 1 }); } catch(e) {}
     }
-    
+
     if (raceState === 'finished') {
-      // Play victory music
-      playMusic('victory', { fadeIn: 0.5 });
+      try { playMusic('victory', { fadeIn: 0.5 }); } catch(e) {}
     }
   }, [raceState, onRaceStart, playMusic, playSfx]);
   
@@ -665,26 +571,33 @@ const GameScene = ({
     });
   };
   
-  // Handle item box collection
+  // Handle item box collection with respawning
   const handleItemBoxCollect = (itemBoxId) => {
     // Mark item box as collected
-    setItemBoxes(prevBoxes => 
-      prevBoxes.map(box => 
+    setItemBoxes(prevBoxes =>
+      prevBoxes.map(box =>
         box.id === itemBoxId ? { ...box, collected: true } : box
       )
     );
-    
+
+    // Respawn after 8 seconds
+    setTimeout(() => {
+      setItemBoxes(prevBoxes =>
+        prevBoxes.map(box =>
+          box.id === itemBoxId ? { ...box, collected: false } : box
+        )
+      );
+    }, 8000);
+
     // Give player an item if they don't already have one
     if (!playerItem) {
       const player = racers.find(r => r.isPlayer);
       if (!player) return;
-      
-      // Determine which item to give based on position
+
       const newItem = getRandomItem(player.position, racers.length);
       setPlayerItem(newItem);
-      
-      // Play sound effect
-      playSfx('item_collect');
+
+      try { playSfx('item_collect'); } catch(e) {}
     }
   };
   
@@ -979,7 +892,7 @@ const GameScene = ({
       <PerspectiveCamera
         ref={cameraRef}
         makeDefault
-        position={cameraPosition}
+        position={[0, 3, 10]}
         fov={75}
         near={0.1}
         far={1000}
@@ -1107,18 +1020,10 @@ const Game3DCanvas = ({ onGameOver }) => {
     players: []
   });
   
-  // Add a direct global keyboard test
-  const [keyState, setKeyState] = useState({
-    ArrowUp: false,
-    ArrowDown: false, 
-    ArrowLeft: false,
-    ArrowRight: false,
-    Space: false
-  });
-
   // Handle container click for focus
   const handleContainerClick = useCallback((e) => {
-    e.currentTarget.focus();
+    const canvas = e.currentTarget.querySelector('canvas');
+    if (canvas) canvas.focus();
   }, []);
 
   // Handle canvas click
@@ -1132,43 +1037,31 @@ const Game3DCanvas = ({ onGameOver }) => {
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
   }, []);
 
-  // Handle focus click
-  const handleFocusClick = useCallback(() => {
-    const canvas = document.getElementById('game-canvas');
-    if (canvas) {
-      canvas.focus();
-    }
-  }, []);
-
-  // Handle force start click
-  const handleForceStartClick = useCallback(() => {
-    // Start countdown phase first
+  // Start the countdown and transition to racing
+  const startCountdown = useCallback(() => {
     setGameState(prev => ({ ...prev, phase: 'countdown' }));
-    
-    // Start countdown from 3
     setCountdownValue(3);
-    
-    // Create countdown timer
+
     const countdownInterval = setInterval(() => {
       setCountdownValue(prev => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          // After countdown, start the race
           setGameState(prev => ({ ...prev, phase: 'racing' }));
           setIsRacing(true);
+          // Auto-focus canvas for keyboard input
+          setTimeout(() => {
+            const canvas = document.querySelector('canvas');
+            if (canvas) canvas.focus();
+          }, 100);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    
-    // Play countdown sound
-    if (audioManager.initialized) {
-      audioManager.playSfx('countdown');
-    }
-    
-    // Cleanup interval on component unmount
-    return () => clearInterval(countdownInterval);
+
+    try {
+      if (audioManager.initialized) audioManager.playSfx('countdown');
+    } catch(e) {}
   }, [audioManager]);
 
   // Handle race data update
@@ -1391,27 +1284,23 @@ const Game3DCanvas = ({ onGameOver }) => {
     }
   }, [audioManager]);
 
-  // Handle kart customization
+  // Handle kart customization - auto-start countdown
   const handleKartCustomize = useCallback((kartConfig) => {
     setGameFlow(prev => ({
       ...prev,
       currentPhase: 'race',
       kartConfig: kartConfig
     }));
-    
+
     setSelectedKartConfig(kartConfig);
-    
-    // Start countdown phase
-    setGameState(prev => ({
-      ...prev,
-      phase: 'countdown'
-    }));
-    
-    // Play confirmation sound
-    if (audioManager.initialized) {
-      audioManager.playSfx('confirm');
-    }
-  }, [audioManager]);
+
+    try {
+      if (audioManager.initialized) audioManager.playSfx('confirm');
+    } catch(e) {}
+
+    // Auto-start the countdown
+    setTimeout(() => startCountdown(), 500);
+  }, [audioManager, startCountdown]);
 
   // Add character info for GameScene
   const characterInfo = useMemo(() => {
@@ -1451,8 +1340,6 @@ const Game3DCanvas = ({ onGameOver }) => {
       >
         <AssetPreloader />
         
-        <KeyboardDebugger />
-        
         {/* Race UI Elements */}
         {gameState.phase === 'racing' && (
           <RaceUI 
@@ -1471,11 +1358,14 @@ const Game3DCanvas = ({ onGameOver }) => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            fontSize: '120px',
-            fontWeight: 'bold',
-            color: 'white',
-            textShadow: '0 0 10px rgba(0,0,0,0.5)',
-            zIndex: 1000
+            fontSize: countdownValue === 0 ? '140px' : '160px',
+            fontWeight: '900',
+            color: countdownValue === 0 ? '#4CAF50' : '#FFFFFF',
+            textShadow: `0 0 30px ${countdownValue === 0 ? 'rgba(76,175,80,0.8)' : 'rgba(0,0,0,0.7)'}, 0 0 60px ${countdownValue === 0 ? 'rgba(76,175,80,0.4)' : 'rgba(0,0,0,0.3)'}`,
+            zIndex: 1000,
+            fontFamily: "'Arial Black', 'Impact', sans-serif",
+            letterSpacing: '4px',
+            animation: 'pulse 0.5s ease-out'
           }}>
             {countdownValue === 0 ? 'GO!' : countdownValue}
           </div>
@@ -1516,70 +1406,6 @@ const Game3DCanvas = ({ onGameOver }) => {
           character={characterInfo}
           kartConfig={kartConfigForGameScene}
         />
-        
-        {/* Key State Debug Display */}
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px',
-          zIndex: 9999
-        }}>
-          <div>Race State: {gameState.phase}</div>
-          <div>⬆️ UP: {keyState.ArrowUp ? 'PRESSED' : 'not pressed'}</div>
-          <div>⬇️ DOWN: {keyState.ArrowDown ? 'PRESSED' : 'not pressed'}</div>
-          <div>⬅️ LEFT: {keyState.ArrowLeft ? 'PRESSED' : 'not pressed'}</div>
-          <div>➡️ RIGHT: {keyState.ArrowRight ? 'PRESSED' : 'not pressed'}</div>
-          <div>SPACE: {keyState.Space ? 'PRESSED' : 'not pressed'}</div>
-        </div>
-        
-        {/* Add the focus button back at the bottom */}
-        <div style={{
-          position: 'absolute',
-          bottom: '10px',
-          left: '10px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '5px',
-          zIndex: 9999
-        }}>
-          <button 
-            onClick={handleFocusClick}
-            style={{
-              background: '#4CAF50',
-              border: 'none',
-              color: 'white',
-              padding: '5px 10px',
-              cursor: 'pointer',
-              borderRadius: '3px'
-            }}
-          >
-            CLICK HERE TO FOCUS
-          </button>
-          <button
-            onClick={handleForceStartClick}
-            style={{
-              background: '#FF5722',
-              border: 'none',
-              color: 'white',
-              padding: '5px 10px',
-              cursor: 'pointer',
-              borderRadius: '3px',
-              marginTop: '5px'
-            }}
-          >
-            FORCE RACE START
-          </button>
-        </div>
         
         {/* 3D Canvas */}
         <Canvas 

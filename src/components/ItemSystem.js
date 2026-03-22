@@ -16,24 +16,49 @@ export const ITEMS = {
   COIN: 'coin'
 };
 
-// Preload item textures for better performance
-const itemTextureLoader = new THREE.TextureLoader();
-const itemTextures = {
-  [ITEMS.MUSHROOM]: itemTextureLoader.load('/imported/assets/sprites/mushroom.png'),
-  [ITEMS.RED_SHELL]: itemTextureLoader.load('/imported/assets/sprites/red_shell.png'),
-  [ITEMS.GREEN_SHELL]: itemTextureLoader.load('/imported/assets/sprites/green_shell.png'),
-  [ITEMS.BANANA]: itemTextureLoader.load('/imported/assets/sprites/banana.png'),
-  [ITEMS.STAR]: itemTextureLoader.load('/imported/assets/sprites/star.png'),
-  [ITEMS.LIGHTNING]: itemTextureLoader.load('/imported/assets/sprites/lightning.png'),
-  itemBox: itemTextureLoader.load('/imported/assets/sprites/item_box.png'),
+// Item colors for fallback rendering (used when textures aren't available)
+const ITEM_COLORS = {
+  [ITEMS.MUSHROOM]: '#FF6B35',
+  [ITEMS.RED_SHELL]: '#E53935',
+  [ITEMS.GREEN_SHELL]: '#43A047',
+  [ITEMS.BANANA]: '#FDD835',
+  [ITEMS.STAR]: '#FFD700',
+  [ITEMS.LIGHTNING]: '#FFEB3B',
+  [ITEMS.TRIPLE_MUSHROOM]: '#FF8A65',
+  [ITEMS.TRIPLE_BANANA]: '#FFF176',
+  [ITEMS.COIN]: '#FFD700',
+  itemBox: '#64B5F6',
 };
 
-// Make sure all textures use correct settings
-Object.values(itemTextures).forEach(texture => {
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-});
+// Try to load textures but gracefully fall back to colors
+const itemTextureLoader = new THREE.TextureLoader();
+const itemTextures = {};
+
+// Load textures with error handling - don't crash if sprites missing
+const tryLoadTexture = (key, path) => {
+  try {
+    itemTextures[key] = itemTextureLoader.load(
+      path,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+      },
+      undefined,
+      () => { itemTextures[key] = null; }
+    );
+  } catch (e) {
+    itemTextures[key] = null;
+  }
+};
+
+tryLoadTexture(ITEMS.MUSHROOM, '/imported/assets/sprites/mushroom.png');
+tryLoadTexture(ITEMS.RED_SHELL, '/imported/assets/sprites/red_shell.png');
+tryLoadTexture(ITEMS.GREEN_SHELL, '/imported/assets/sprites/green_shell.png');
+tryLoadTexture(ITEMS.BANANA, '/imported/assets/sprites/banana.png');
+tryLoadTexture(ITEMS.STAR, '/imported/assets/sprites/star.png');
+tryLoadTexture(ITEMS.LIGHTNING, '/imported/assets/sprites/lightning.png');
+tryLoadTexture('itemBox', '/imported/assets/sprites/item_box.png');
 
 // Item box component
 export const ItemBox = ({ position = [0, 0, 0], onCollect, id }) => {
@@ -94,10 +119,10 @@ export const ItemBox = ({ position = [0, 0, 0], onCollect, id }) => {
     <group position={[position[0], position[1], position[2]]}>
       {!collected && (
         <mesh ref={meshRef} position={[0, 0.5, 0]}>
-          {/* Use a sprite with the imported item box texture */}
           <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial 
-            map={itemTextures.itemBox}
+          <meshStandardMaterial
+            map={itemTextures.itemBox || null}
+            color={!itemTextures.itemBox ? ITEM_COLORS.itemBox : undefined}
             transparent
             opacity={1.0}
             emissive="#FFFFFF"
@@ -333,7 +358,7 @@ export const useItemEffects = (player, setPlayerState) => {
     if (pendingItems.length > 0) {
       // Take the first item from the queue and use it
       const itemType = pendingItems[0];
-      useItem(itemType);
+      useItem(itemType); // eslint-disable-line react-hooks/rules-of-hooks
       
       // Remove the processed item from the queue
       setPendingItems(prev => prev.slice(1));

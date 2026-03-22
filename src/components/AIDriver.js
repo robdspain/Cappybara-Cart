@@ -4,63 +4,56 @@ import * as THREE from 'three';
 import KartModel from './CharacterModels';
 
 // AI driver component that controls a kart racer
-const AIDriver = ({ 
-  characterType, 
-  initialPosition, 
-  trackPath, 
-  speed = 0.08, 
-  difficultyFactor = 1.0, 
-  lapCallback = () => {} 
+const AIDriver = ({
+  characterType,
+  initialPosition,
+  trackPath,
+  speed = 0.08,
+  difficultyFactor = 1.0,
+  lapCallback = () => {}
 }) => {
-  const [position, setPosition] = useState(initialPosition || [0, 0, 0]);
-  const [rotation, setRotation] = useState([0, 0, 0]);
-  const [currentPathIndex, setCurrentPathIndex] = useState(0);
+  const groupRef = useRef();
   const [laps, setLaps] = useState(0);
-  
+
   const aiState = useRef({
     speed: speed * difficultyFactor,
-    acceleration: 0.001 * difficultyFactor,
-    maxSpeed: 0.12 * difficultyFactor,
-    turnSpeed: 0.05 * difficultyFactor,
+    acceleration: 0.002 * difficultyFactor,
+    maxSpeed: 0.18 * difficultyFactor,
+    turnSpeed: 0.06 * difficultyFactor,
     currentSpeed: 0,
-    currentTarget: null,
-    distanceToTarget: 0,
-    isStuck: false,
-    stuckTime: 0
+    currentPathIndex: 0,
+    position: initialPosition ? [...initialPosition] : [0, 0, 0],
+    rotation: [0, 0, 0],
+    lastDistanceToTarget: Infinity,
+    stuckTimer: 0,
+    isStuck: false
   });
-  
+
   // Initialize or update state when props change
   useEffect(() => {
     aiState.current.speed = speed * difficultyFactor;
-    aiState.current.acceleration = 0.001 * difficultyFactor;
-    aiState.current.maxSpeed = 0.12 * difficultyFactor;
-    aiState.current.turnSpeed = 0.05 * difficultyFactor;
+    aiState.current.acceleration = 0.002 * difficultyFactor;
+    aiState.current.maxSpeed = 0.18 * difficultyFactor;
+    aiState.current.turnSpeed = 0.06 * difficultyFactor;
   }, [speed, difficultyFactor]);
-  
+
   // AI movement logic
   useFrame((state, delta) => {
-    // Skip if no track path is provided
-    if (!trackPath || trackPath.length === 0) return;
-    
-    // Calculate next target point on the track
-    const targetPoint = trackPath[currentPathIndex];
-    aiState.current.currentTarget = targetPoint;
-    
+    if (!trackPath || trackPath.length === 0 || !groupRef.current) return;
+
+    const ai = aiState.current;
+    const targetPoint = trackPath[ai.currentPathIndex];
+
     // Calculate distance to target
-    const distanceToTarget = new THREE.Vector3(
-      targetPoint[0] - position[0],
-      0,
-      targetPoint[2] - position[2]
-    ).length();
-    
-    aiState.current.distanceToTarget = distanceToTarget;
-    
+    const dx = targetPoint[0] - ai.position[0];
+    const dz = targetPoint[2] - ai.position[2];
+    const distanceToTarget = Math.sqrt(dx * dx + dz * dz);
+
     // Check if we've reached the target point
-    if (distanceToTarget < 1) {
-      // Move to next target
-      const nextIndex = (currentPathIndex + 1) % trackPath.length;
-      setCurrentPathIndex(nextIndex);
-      
+    if (distanceToTarget < 2.0) {
+      const nextIndex = (ai.currentPathIndex + 1) % trackPath.length;
+      ai.currentPathIndex = nextIndex;
+
       // Count lap completion
       if (nextIndex === 0) {
         const newLaps = laps + 1;
@@ -68,97 +61,79 @@ const AIDriver = ({
         lapCallback(newLaps);
       }
     }
-    
+
     // Calculate direction to target
-    const directionToTarget = new THREE.Vector3(
-      targetPoint[0] - position[0],
-      0,
-      targetPoint[2] - position[2]
-    ).normalize();
-    
+    const dirLength = Math.max(distanceToTarget, 0.01);
+    const dirX = dx / dirLength;
+    const dirZ = dz / dirLength;
+
     // Calculate desired angle
-    const targetAngle = Math.atan2(directionToTarget.x, directionToTarget.z);
-    
+    const targetAngle = Math.atan2(dirX, dirZ);
+
     // Current angle
-    let currentAngle = rotation[1] % (Math.PI * 2);
-    if (currentAngle < 0) currentAngle += Math.PI * 2;
-    
+    let currentAngle = ai.rotation[1];
+
     // Find shortest angle difference
     let angleDifference = targetAngle - currentAngle;
-    if (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
-    if (angleDifference < -Math.PI) angleDifference += Math.PI * 2;
-    
-    // Determine turning direction and amount
-    const turnAmount = Math.min(Math.abs(angleDifference), aiState.current.turnSpeed) * Math.sign(angleDifference);
-    
-    // Update rotation
-    const newRotation = [...rotation];
-    newRotation[1] += turnAmount;
-    setRotation(newRotation);
-    
-    // AI acceleration logic with some randomness
-    let currentSpeed = aiState.current.currentSpeed;
-    
-    // Random variations for more natural AI driving
-    const shouldSlowForTurn = Math.abs(angleDifference) > 0.5 && Math.random() > 0.7;
-    const randomBoost = Math.random() > 0.95 ? 0.02 : 0;
-    
+    while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
+    while (angleDifference < -Math.PI) angleDifference += Math.PI * 2;
+
+    // Smooth turning
+    const turnAmount = Math.min(Math.abs(angleDifference), ai.turnSpeed) * Math.sign(angleDifference);
+    ai.rotation[1] += turnAmount;
+
+    // Acceleration logic
+    const shouldSlowForTurn = Math.abs(angleDifference) > 0.5;
+
     if (shouldSlowForTurn) {
-      // Slow down for sharp turns
-      currentSpeed *= 0.95;
+      ai.currentSpeed *= 0.96;
     } else {
-      // Accelerate to max speed
-      currentSpeed += aiState.current.acceleration + randomBoost;
-      if (currentSpeed > aiState.current.maxSpeed) {
-        currentSpeed = aiState.current.maxSpeed;
+      ai.currentSpeed += ai.acceleration;
+      if (ai.currentSpeed > ai.maxSpeed) {
+        ai.currentSpeed = ai.maxSpeed;
       }
     }
-    
-    // Check if stuck and apply unstuck behavior
-    if (distanceToTarget === aiState.current.distanceToTarget) {
-      aiState.current.stuckTime += delta;
-      if (aiState.current.stuckTime > 3) {
-        aiState.current.isStuck = true;
+
+    // Stuck detection - compare distance change over time
+    if (Math.abs(distanceToTarget - ai.lastDistanceToTarget) < 0.01) {
+      ai.stuckTimer += delta;
+      if (ai.stuckTimer > 2.0) {
+        ai.isStuck = true;
       }
     } else {
-      aiState.current.stuckTime = 0;
-      aiState.current.isStuck = false;
+      ai.stuckTimer = 0;
+      ai.isStuck = false;
     }
-    
-    // Unstuck behavior - wiggle and boost
-    if (aiState.current.isStuck) {
-      // Random direction change
-      newRotation[1] += (Math.random() - 0.5) * 0.5;
-      setRotation(newRotation);
-      
-      // Temporary speed boost
-      currentSpeed = aiState.current.maxSpeed * 1.5;
-      
-      // Reset stuck state after a short time
-      if (aiState.current.stuckTime > 5) {
-        aiState.current.stuckTime = 0;
-        aiState.current.isStuck = false;
-      }
+    ai.lastDistanceToTarget = distanceToTarget;
+
+    // Unstuck behavior - skip to next waypoint and boost
+    if (ai.isStuck) {
+      ai.currentPathIndex = (ai.currentPathIndex + 2) % trackPath.length;
+      ai.currentSpeed = ai.maxSpeed * 1.3;
+      ai.stuckTimer = 0;
+      ai.isStuck = false;
     }
-    
-    aiState.current.currentSpeed = currentSpeed;
-    
-    // Update position based on speed and rotation
-    const newPosition = [...position];
-    newPosition[0] += Math.sin(newRotation[1]) * currentSpeed;
-    newPosition[2] += Math.cos(newRotation[1]) * currentSpeed;
-    
-    setPosition(newPosition);
+
+    // Update position
+    ai.position[0] += Math.sin(ai.rotation[1]) * ai.currentSpeed;
+    ai.position[2] += Math.cos(ai.rotation[1]) * ai.currentSpeed;
+    ai.position[1] = 0.5; // Keep on ground
+
+    // Update the Three.js group directly for performance
+    groupRef.current.position.set(ai.position[0], ai.position[1], ai.position[2]);
+    groupRef.current.rotation.set(0, ai.rotation[1], 0);
   });
-  
+
   return (
-    <KartModel 
-      position={position} 
-      rotation={rotation} 
-      characterType={characterType} 
-      isPlayer={false} 
-    />
+    <group ref={groupRef} position={aiState.current.position} rotation={[0, 0, 0]}>
+      <KartModel
+        position={[0, 0, 0]}
+        rotation={[0, 0, 0]}
+        characterType={characterType}
+        isPlayer={false}
+      />
+    </group>
   );
 };
 
-export default AIDriver; 
+export default AIDriver;

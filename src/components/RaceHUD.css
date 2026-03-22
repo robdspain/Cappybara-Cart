@@ -21,11 +21,8 @@
   display: flex;
   justify-content: space-between;
   padding: 15px 20px;
-  background-image: url('/imported/assets/craftpix-895410-free-jungle-cartoon-2d-game-ui/PNG/menu/header.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center top;
-  height: 80px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 80%, transparent 100%);
+  height: 70px;
 }
 
 .lap-counter, .race-timer, .player-position {
@@ -82,11 +79,8 @@
   display: flex;
   justify-content: space-between;
   padding: 15px 20px;
-  background-image: url('/imported/assets/craftpix-895410-free-jungle-cartoon-2d-game-ui/PNG/menu/footer.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  height: 100px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 80%, transparent 100%);
+  height: 90px;
 }
 
 .speedometer, .boost-meter, .lap-times {
