@@ -86,9 +86,6 @@ const PlayerRacer = forwardRef(({
   // Add a lastValidPosition ref to store the last position that was on the track
   const lastValidPositionRef = useRef([0, 0.5, 10]);
 
-  // Add a ref for key debug logging
-  const lastKeyDebugLog = useRef(0);
-
   // Calculate kart stats based on character and kart selection
   const calculateKartStats = useCallback(() => {
     // Base stats from character
@@ -454,12 +451,6 @@ const PlayerRacer = forwardRef(({
     const playerGroup = groupRef.current;
     const keysRef = keysPressed.current;
     
-    // Periodic state check
-    const now = Date.now();
-    if (now - lastKeyDebugLog.current > 2000) {
-      lastKeyDebugLog.current = now;
-    }
-    
     // PERMANENT FIX: Allow movement regardless of race state
     // Skip if stunned
     if (stunTime > 0) {
@@ -473,14 +464,14 @@ const PlayerRacer = forwardRef(({
     
     // Handle throttle input
     if (keysRef.ArrowUp) {
-      kartPhysics.throttle = Math.min(1, kartPhysics.throttle + delta * 2);
+      kartPhysics.throttle = Math.min(1, kartPhysics.throttle + delta * 4);
     } else {
-      kartPhysics.throttle = Math.max(0, kartPhysics.throttle - delta * 3);
+      kartPhysics.throttle = Math.max(0, kartPhysics.throttle - delta * 5);
     }
     
     // Handle brake input
     if (keysRef.ArrowDown) {
-      kartPhysics.brake = Math.min(1, kartPhysics.brake + delta * 4);
+      kartPhysics.brake = Math.min(1, kartPhysics.brake + delta * 6);
     } else {
       kartPhysics.brake = Math.max(0, kartPhysics.brake - delta * 6);
     }
@@ -519,7 +510,7 @@ const PlayerRacer = forwardRef(({
     const steeringSpeed = keysRef.Space ? kartPhysics.steeringSpeed * 0.7 : kartPhysics.steeringSpeed;
     
     if (Math.abs(steeringDelta) > 0.001) {
-      kartPhysics.steering += steeringDelta * Math.min(1, delta * steeringSpeed);
+      kartPhysics.steering += steeringDelta * Math.min(1, delta * steeringSpeed * 3);
     } else {
       kartPhysics.steering = targetSteering;
     }
@@ -563,6 +554,12 @@ const PlayerRacer = forwardRef(({
       if (kartPhysics.velocity.lengthSq() > 0.1) {
         const velocityDir = kartPhysics.velocity.clone().normalize();
         accelerationForce.add(velocityDir.multiplyScalar(-brakeForce));
+      }
+
+      // Allow reverse when nearly stopped and braking
+      if (kartPhysics.velocity.lengthSq() < 0.5 && kartPhysics.brake > 0.3) {
+        const reverseForce = forward.clone().multiplyScalar(-kartPhysics.engineAcceleration * 0.4 * kartPhysics.brake);
+        accelerationForce.add(reverseForce);
       }
     }
     
@@ -640,7 +637,7 @@ const PlayerRacer = forwardRef(({
     // Apply off-track physics
     if (!trackResult.isOnTrack) {
       // Reduce velocity when off track
-      kartPhysics.velocity.multiplyScalar(0.98);
+      kartPhysics.velocity.multiplyScalar(0.95);
     }
     
     // Calculate target facing direction from velocity
@@ -651,7 +648,7 @@ const PlayerRacer = forwardRef(({
     }
     
     // Progressively rotate toward movement direction
-    let rotationDelta = THREE.MathUtils.degToRad(100) * delta; // 100 deg/sec rotation speed
+    let rotationDelta = THREE.MathUtils.degToRad(150) * delta; // 150 deg/sec rotation speed
     
     // Adjust for drifting - less rotation toward movement direction
     if (kartPhysics.isDrifting) {
@@ -932,13 +929,6 @@ const PlayerRacer = forwardRef(({
         </mesh>
       )}
       
-      {/* Debug visualization */}
-      {true && ( 
-        <mesh position={[0, 0, 0]}>
-          <sphereGeometry args={[0.5, 16, 16]} />
-          <meshBasicMaterial color="blue" wireframe={true} />
-        </mesh>
-      )}
     </group>
   );
 });

@@ -28,27 +28,23 @@ import { TerrainModels, VegetationModels } from './utils/ModelLoader';
 const AdvancedLighting = () => {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={1} 
-        castShadow 
-        shadow-mapSize-width={2048} 
-        shadow-mapSize-height={2048}
-      />
-      <spotLight
-        position={[0, 10, 0]}
-        angle={0.3}
-        penumbra={0.8}
+      <ambientLight intensity={0.6} color="#FFF8E7" />
+      <directionalLight
+        position={[50, 50, 25]}
         intensity={1.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
+        shadow-camera-far={200}
+        shadow-camera-left={-50}
+        shadow-camera-right={50}
+        shadow-camera-top={50}
+        shadow-camera-bottom={-50}
       />
       {/* Use our custom SkyBox instead of the default Sky */}
       <CustomSkyBox />
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
-      
+      <Stars radius={100} depth={50} count={8000} factor={4} saturation={0} fade speed={1} />
+
       {/* Add terrain models around the track */}
       <TerrainModels count={15} radius={200} />
       <VegetationModels count={30} radius={80} />
@@ -77,12 +73,19 @@ const CustomSkyBox = () => {
     }
   }, []);
   
-  // If sky material is not available, don't render anything
-  if (!skyMaterial) return null;
-  
+  // Fallback gradient sky if dynamic texture is not available
+  if (!skyMaterial) {
+    return (
+      <mesh>
+        <sphereGeometry args={[500, 64, 32]} />
+        <meshBasicMaterial color="#87CEEB" side={THREE.BackSide} />
+      </mesh>
+    );
+  }
+
   return (
     <mesh>
-      <sphereGeometry args={[100, 32, 16]} />
+      <sphereGeometry args={[500, 64, 32]} />
       {skyMaterial && <primitive object={skyMaterial} attach="material" />}
     </mesh>
   );

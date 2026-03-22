@@ -50,11 +50,6 @@ const KartModel = forwardRef(({
   const rotationRef = useRef(rotation);
   const lastRotationRef = useRef(rotation[1]); // Track last rotation for steering detection
   
-  // Global debug reference if this is the player
-  if (isPlayer) {
-    window.kartRef = groupRef;
-  }
-  
   // Expose the groupRef to parent components through the forwarded ref
   useImperativeHandle(ref, () => ({
     groupRef,
@@ -84,10 +79,7 @@ const KartModel = forwardRef(({
           }
           lastPositionRef.current.set(x, y, z);
           
-          // Log significant changes
-          if (hasChanged) {
-            console.log(`KartModel position set to: [${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}]`);
-          }
+          // Position changed (logging removed)
           
           return true;
         } else {
@@ -171,7 +163,6 @@ const KartModel = forwardRef(({
         const validPosition = position.every(val => typeof val === 'number' && !isNaN(val));
         if (validPosition) {
           groupRef.current.position.set(position[0], position[1], position[2]);
-          console.log('KartModel initial position set from props:', position);
         }
       }
       
@@ -237,7 +228,6 @@ const KartModel = forwardRef(({
         // Ensure the group ref has wheels initialized for animation
         if (groupRef.current) {
           // Create wheel references if they don't exist yet
-          console.log("Initializing wheels in kart model");
           groupRef.current.userData.wheels = groupRef.current.userData.wheels || [];
           
           // Make sure the position and rotation are also set initially
@@ -249,7 +239,6 @@ const KartModel = forwardRef(({
             groupRef.current.rotation.set(rotation[0], rotation[1], rotation[2]);
           }
           
-          console.log("Initial kart position set:", Array.isArray(position) ? position.map(v => typeof v === 'number' ? v.toFixed(2) : v) : position);
         }
       } catch (error) {
         console.error("Error creating materials for kart model:", error);
@@ -271,7 +260,7 @@ const KartModel = forwardRef(({
   // Update animation state for off-track visual feedback
   useEffect(() => {
     if (!isOnTrack) {
-      console.log('Kart is off-track!');
+      // Off-track state detected
     }
   }, [isOnTrack]);
   
@@ -369,14 +358,6 @@ const KartModel = forwardRef(({
         if (Array.isArray(currentPos) && currentPos.length === 3 &&
             !isNaN(currentPos[0]) && !isNaN(currentPos[1]) && !isNaN(currentPos[2])) {
           
-          // Only log significant position changes to avoid console spam
-          const now = Date.now();
-          if (now - animationState.current.lastPositionUpdate > 1000) {
-            console.log(`Kart position: ${currentPos[0].toFixed(2)}, ${currentPos[1].toFixed(2)}, ${currentPos[2].toFixed(2)}`);
-            console.log(`Kart rotation: ${rotationY.toFixed(2)}`);
-            animationState.current.lastPositionUpdate = now;
-          }
-          
           // Apply position with bobbing and off-track shaking
           groupRef.current.position.set(
             currentPos[0] + animationState.current.shakeOffsetX,
@@ -444,20 +425,6 @@ const KartModel = forwardRef(({
     }
   });
   
-  // Expose the model for direct manipulation for debugging
-  useEffect(() => {
-    if (isPlayer && groupRef.current) {
-      window.kartModel = groupRef;
-      console.log("KartModel exposed to window for debugging");
-    }
-    
-    return () => {
-      if (isPlayer) {
-        window.kartModel = null;
-      }
-    };
-  }, [isPlayer]);
-  
   // Return simplified placeholder until fully loaded
   if (!loadingComplete || !kartMaterial || !characterMaterial) {
     return (
@@ -482,10 +449,16 @@ const KartModel = forwardRef(({
     >
       {/* Kart Body */}
       <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
-        <boxGeometry args={[0.8, 0.3, 1.2]} />
+        <boxGeometry args={[0.9, 0.25, 1.4]} />
         <primitive object={kartMaterial} attach="material" />
       </mesh>
-      
+
+      {/* Front bumper */}
+      <mesh castShadow position={[0, 0.15, 0.75]}>
+        <boxGeometry args={[0.95, 0.12, 0.1]} />
+        <meshStandardMaterial color="#333333" roughness={0.3} metalness={0.7} />
+      </mesh>
+
       {/* Character body based on type */}
       {characterType === 'capybara' && (
         <>
@@ -500,7 +473,31 @@ const KartModel = forwardRef(({
             <sphereGeometry args={[0.25, 16, 16]} />
             <primitive object={characterMaterial} attach="material" />
           </mesh>
-          
+
+          {/* Eyes */}
+          <mesh position={[-0.1, 0.75, -0.72]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshStandardMaterial color="#FFFFFF" />
+          </mesh>
+          <mesh position={[0.1, 0.75, -0.72]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshStandardMaterial color="#FFFFFF" />
+          </mesh>
+          {/* Pupils */}
+          <mesh position={[-0.1, 0.75, -0.77]}>
+            <sphereGeometry args={[0.025, 8, 8]} />
+            <meshStandardMaterial color="#111111" />
+          </mesh>
+          <mesh position={[0.1, 0.75, -0.77]}>
+            <sphereGeometry args={[0.025, 8, 8]} />
+            <meshStandardMaterial color="#111111" />
+          </mesh>
+          {/* Nose */}
+          <mesh position={[0, 0.68, -0.74]}>
+            <sphereGeometry args={[0.04, 8, 8]} />
+            <meshStandardMaterial color="#333333" />
+          </mesh>
+
           {/* Ears */}
           <mesh castShadow receiveShadow position={[-0.15, 0.9, -0.5]}>
             <sphereGeometry args={[0.08, 8, 8]} />
@@ -655,18 +652,18 @@ const KartModel = forwardRef(({
           }}
         >
           <cylinderGeometry args={[0.2, 0.2, 0.1, 16]} />
-          <meshStandardMaterial color="#333333" />
+          <meshStandardMaterial color="#222222" />
         </mesh>
-        
+
         {/* Wheel rim and details */}
         <mesh
           position={[0.4, 0, 0]}
           rotation={[Math.PI / 2, 0, 0]}
         >
           <torusGeometry args={[0.15, 0.02, 8, 16]} />
-          <meshStandardMaterial color="#777777" metalness={0.7} />
+          <meshStandardMaterial color="#AAAAAA" metalness={0.9} />
         </mesh>
-        
+
         <mesh
           castShadow
           receiveShadow
@@ -677,16 +674,16 @@ const KartModel = forwardRef(({
           }}
         >
           <cylinderGeometry args={[0.2, 0.2, 0.1, 16]} />
-          <meshStandardMaterial color="#333333" />
+          <meshStandardMaterial color="#222222" />
         </mesh>
-        
+
         {/* Wheel rim and details */}
         <mesh
           position={[-0.4, 0, 0]}
           rotation={[Math.PI / 2, 0, 0]}
         >
           <torusGeometry args={[0.15, 0.02, 8, 16]} />
-          <meshStandardMaterial color="#777777" metalness={0.7} />
+          <meshStandardMaterial color="#AAAAAA" metalness={0.9} />
         </mesh>
       </group>
       
@@ -701,18 +698,18 @@ const KartModel = forwardRef(({
         }}
       >
         <cylinderGeometry args={[0.2, 0.2, 0.12, 16]} /> {/* Slightly wider rear wheels */}
-        <meshStandardMaterial color="#333333" />
+        <meshStandardMaterial color="#222222" />
       </mesh>
-      
+
       {/* Wheel rim and details */}
       <mesh
         position={[0.4, 0, -0.4]}
         rotation={[Math.PI / 2, 0, 0]}
       >
         <torusGeometry args={[0.15, 0.02, 8, 16]} />
-        <meshStandardMaterial color="#777777" metalness={0.7} />
+        <meshStandardMaterial color="#AAAAAA" metalness={0.9} />
       </mesh>
-      
+
       <mesh
         castShadow
         receiveShadow
@@ -723,16 +720,16 @@ const KartModel = forwardRef(({
         }}
       >
         <cylinderGeometry args={[0.2, 0.2, 0.12, 16]} /> {/* Slightly wider rear wheels */}
-        <meshStandardMaterial color="#333333" />
+        <meshStandardMaterial color="#222222" />
       </mesh>
-      
+
       {/* Wheel rim and details */}
       <mesh
         position={[-0.4, 0, -0.4]}
         rotation={[Math.PI / 2, 0, 0]}
       >
         <torusGeometry args={[0.15, 0.02, 8, 16]} />
-        <meshStandardMaterial color="#777777" metalness={0.7} />
+        <meshStandardMaterial color="#AAAAAA" metalness={0.9} />
       </mesh>
       
       {/* Suspension springs */}

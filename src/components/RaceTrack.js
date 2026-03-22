@@ -177,37 +177,38 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
       // Create materials
       const trackMat = new THREE.MeshStandardMaterial({
         map: trackTexture,
-        roughness: 0.8,
-        metalness: 0.2
+        roughness: 0.7,
+        metalness: 0.1
       });
-      
+
       const grassMat = new THREE.MeshStandardMaterial({
         map: grassTexture,
         roughness: 0.9,
         metalness: 0.1
       });
-      
+
       const sandMat = new THREE.MeshStandardMaterial({
         map: sandTexture,
         roughness: 1.0,
         metalness: 0.0
       });
-      
+
       const waterMat = new THREE.MeshStandardMaterial({
         map: waterTexture,
-        roughness: 0.3,
-        metalness: 0.6,
+        roughness: 0.1,
+        metalness: 0.8,
         transparent: true,
-        opacity: 0.8
+        opacity: 0.7,
+        envMapIntensity: 1.5
       });
-      
+
       setTrackMaterial(trackMat);
       setGrassMaterial(grassMat);
       setSandMaterial(sandMat);
       setWaterMaterial(waterMat);
       setLoadingComplete(true);
     };
-    
+
     // Try to use dynamic textures created in our script tags
     if (window.trackTexture && window.grassTexture && window.sandTexture && window.waterTexture) {
       // Set up texture wrapping and repeats
@@ -233,28 +234,29 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
       // Create materials with the dynamic textures
       const trackMat = new THREE.MeshStandardMaterial({
         map: trackTexture,
-        roughness: 0.8,
-        metalness: 0.2
+        roughness: 0.7,
+        metalness: 0.1
       });
-      
+
       const grassMat = new THREE.MeshStandardMaterial({
         map: grassTexture,
         roughness: 0.9,
         metalness: 0.1
       });
-      
+
       const sandMat = new THREE.MeshStandardMaterial({
         map: sandTexture,
         roughness: 1.0,
         metalness: 0.0
       });
-      
+
       const waterMat = new THREE.MeshStandardMaterial({
         map: waterTexture,
-        roughness: 0.3,
-        metalness: 0.6,
+        roughness: 0.1,
+        metalness: 0.8,
         transparent: true,
-        opacity: 0.8
+        opacity: 0.7,
+        envMapIntensity: 1.5
       });
       
       setTrackMaterial(trackMat);
@@ -325,28 +327,29 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
         // Create materials
         const trackMat = new THREE.MeshStandardMaterial({
           map: trackTexture,
-          roughness: 0.8,
-          metalness: 0.2
+          roughness: 0.7,
+          metalness: 0.1
         });
-        
+
         const grassMat = new THREE.MeshStandardMaterial({
           map: grassTexture,
           roughness: 0.9,
           metalness: 0.1
         });
-        
+
         const sandMat = new THREE.MeshStandardMaterial({
           map: sandTexture,
           roughness: 1.0,
           metalness: 0.0
         });
-        
+
         const waterMat = new THREE.MeshStandardMaterial({
           map: waterTexture,
-          roughness: 0.3,
-          metalness: 0.6,
+          roughness: 0.1,
+          metalness: 0.8,
           transparent: true,
-          opacity: 0.8
+          opacity: 0.7,
+          envMapIntensity: 1.5
         });
         
         setTrackMaterial(trackMat);
@@ -631,7 +634,13 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
         <planeGeometry args={[150, 150]} />
         <primitive object={grassMaterial} attach="material" />
       </mesh>
-      
+
+      {/* Ground fog effect */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+        <planeGeometry args={[200, 200]} />
+        <meshBasicMaterial color="#FFFFFF" transparent opacity={0.05} />
+      </mesh>
+
       {/* Scenic elements */}
       {scenicElements.map((element, index) => {
         if (element.type === 'water') {
@@ -703,7 +712,7 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
         position={[0, -0.5, 0]} 
         receiveShadow
       >
-        <ringGeometry args={[trackInnerRadius * 1.5, trackOuterRadius * 1.5, 64, 1]} />
+        <ringGeometry args={[trackInnerRadius * 1.5, trackOuterRadius * 1.5, 128, 1]} />
         <primitive object={trackMaterial} attach="material" />
       </mesh>
       
@@ -758,7 +767,9 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
         receiveShadow
       >
         <planeGeometry args={[trackWidth, 1]} />
-        <meshStandardMaterial color="#FFFFFF" />
+        <meshStandardMaterial>
+          <canvasTexture attach="map" args={[createCheckerPattern()]} />
+        </meshStandardMaterial>
       </mesh>
       
       {/* Checkpoint markers */}
@@ -859,6 +870,10 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
           <mesh position={[0, 3.5, 0]} castShadow>
             <coneGeometry args={[2 * tree.scale, 4 * tree.scale, 8]} />
             <meshStandardMaterial color="#388E3C" />
+          </mesh>
+          <mesh position={[0, 5.5, 0]} castShadow>
+            <coneGeometry args={[1.4 * tree.scale, 3 * tree.scale, 8]} />
+            <meshStandardMaterial color="#2E7D32" />
           </mesh>
         </group>
       ))}

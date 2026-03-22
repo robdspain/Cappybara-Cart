@@ -13,28 +13,39 @@ const AIDriver = ({
   lapCallback = () => {}
 }) => {
   const groupRef = useRef();
-  const [laps, setLaps] = useState(0);
+  const lapsRef = useRef(0);
 
   const aiState = useRef({
     speed: speed * difficultyFactor,
-    acceleration: 0.002 * difficultyFactor,
-    maxSpeed: 0.18 * difficultyFactor,
-    turnSpeed: 0.06 * difficultyFactor,
+    acceleration: 0.003 * difficultyFactor,
+    maxSpeed: 0.22 * difficultyFactor,
+    turnSpeed: 0.08 * difficultyFactor,
     currentSpeed: 0,
     currentPathIndex: 0,
     position: initialPosition ? [...initialPosition] : [0, 0, 0],
     rotation: [0, 0, 0],
     lastDistanceToTarget: Infinity,
     stuckTimer: 0,
-    isStuck: false
+    isStuck: false,
+    // Visual state
+    leanAngle: 0,
+    isDrifting: false,
+    driftDirection: 0,
+    // Personality - random variations per AI
+    personality: {
+      aggression: 0.8 + Math.random() * 0.4,    // 0.8-1.2
+      consistency: 0.85 + Math.random() * 0.15,  // 0.85-1.0
+      bravery: 0.7 + Math.random() * 0.3,        // How fast through turns
+    }
   });
 
   // Initialize or update state when props change
   useEffect(() => {
-    aiState.current.speed = speed * difficultyFactor;
-    aiState.current.acceleration = 0.002 * difficultyFactor;
-    aiState.current.maxSpeed = 0.18 * difficultyFactor;
-    aiState.current.turnSpeed = 0.06 * difficultyFactor;
+    const ai = aiState.current;
+    ai.speed = speed * difficultyFactor;
+    ai.acceleration = 0.003 * difficultyFactor * ai.personality.aggression;
+    ai.maxSpeed = 0.22 * difficultyFactor * ai.personality.aggression;
+    ai.turnSpeed = 0.08 * difficultyFactor;
   }, [speed, difficultyFactor]);
 
   // AI movement logic
@@ -44,31 +55,35 @@ const AIDriver = ({
     const ai = aiState.current;
     const targetPoint = trackPath[ai.currentPathIndex];
 
-    // Calculate distance to target
+    // Look ahead 2 waypoints for smoother pathing
+    const lookAheadIndex = (ai.currentPathIndex + 2) % trackPath.length;
+    const lookAheadPoint = trackPath[lookAheadIndex];
+
+    // Calculate distance to current target
     const dx = targetPoint[0] - ai.position[0];
     const dz = targetPoint[2] - ai.position[2];
     const distanceToTarget = Math.sqrt(dx * dx + dz * dz);
 
     // Check if we've reached the target point
-    if (distanceToTarget < 2.0) {
+    if (distanceToTarget < 2.5) {
       const nextIndex = (ai.currentPathIndex + 1) % trackPath.length;
       ai.currentPathIndex = nextIndex;
 
       // Count lap completion
       if (nextIndex === 0) {
-        const newLaps = laps + 1;
-        setLaps(newLaps);
-        lapCallback(newLaps);
+        lapsRef.current += 1;
+        lapCallback(lapsRef.current);
       }
     }
 
-    // Calculate direction to target
-    const dirLength = Math.max(distanceToTarget, 0.01);
-    const dirX = dx / dirLength;
-    const dirZ = dz / dirLength;
+    // Blend between current target and look-ahead for smoother movement
+    const blendFactor = 0.3;
+    const blendedX = dx * (1 - blendFactor) + (lookAheadPoint[0] - ai.position[0]) * blendFactor;
+    const blendedZ = dz * (1 - blendFactor) + (lookAheadPoint[2] - ai.position[2]) * blendFactor;
 
-    // Calculate desired angle
-    const targetAngle = Math.atan2(dirX, dirZ);
+    // Calculate desired angle from blended direction
+    const blendedLen = Math.max(Math.sqrt(blendedX * blendedX + blendedZ * blendedZ), 0.01);
+    const targetAngle = Math.atan2(blendedX / blendedLen, blendedZ / blendedLen);
 
     // Current angle
     let currentAngle = ai.rotation[1];
@@ -78,26 +93,45 @@ const AIDriver = ({
     while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
     while (angleDifference < -Math.PI) angleDifference += Math.PI * 2;
 
-    // Smooth turning
-    const turnAmount = Math.min(Math.abs(angleDifference), ai.turnSpeed) * Math.sign(angleDifference);
-    ai.rotation[1] += turnAmount;
+    // Smooth turning with easing
+    const turnStrength = Math.min(Math.abs(angleDifference), ai.turnSpeed) * Math.sign(angleDifference);
+    ai.rotation[1] += turnStrength;
 
-    // Acceleration logic
-    const shouldSlowForTurn = Math.abs(angleDifference) > 0.5;
+    // Calculate lean angle for visual feedback
+    const targetLean = -turnStrength * 3;
+    ai.leanAngle += (targetLean - ai.leanAngle) * 0.1;
+
+    // Visual drift state for sharp turns
+    const isSharpTurn = Math.abs(angleDifference) > 0.4;
+    ai.isDrifting = isSharpTurn && ai.currentSpeed > ai.maxSpeed * 0.5;
+    ai.driftDirection = Math.sign(angleDifference);
+
+    // Acceleration logic with turn-speed coupling
+    const turnPenalty = Math.abs(angleDifference) * ai.personality.bravery;
+    const shouldSlowForTurn = turnPenalty > 0.4;
 
     if (shouldSlowForTurn) {
-      ai.currentSpeed *= 0.96;
+      // Brake proportional to turn sharpness
+      const brakeFactor = 0.92 + (1 - turnPenalty) * 0.06;
+      ai.currentSpeed *= brakeFactor;
     } else {
-      ai.currentSpeed += ai.acceleration;
+      // Accelerate with slight randomness for natural feel
+      const accelNoise = 1.0 + (Math.random() - 0.5) * 0.1;
+      ai.currentSpeed += ai.acceleration * accelNoise;
       if (ai.currentSpeed > ai.maxSpeed) {
         ai.currentSpeed = ai.maxSpeed;
       }
     }
 
-    // Stuck detection - compare distance change over time
-    if (Math.abs(distanceToTarget - ai.lastDistanceToTarget) < 0.01) {
+    // Occasional random boost for variety
+    if (Math.random() > 0.998) {
+      ai.currentSpeed = Math.min(ai.currentSpeed * 1.3, ai.maxSpeed * 1.2);
+    }
+
+    // Stuck detection
+    if (Math.abs(distanceToTarget - ai.lastDistanceToTarget) < 0.005) {
       ai.stuckTimer += delta;
-      if (ai.stuckTimer > 2.0) {
+      if (ai.stuckTimer > 1.5) {
         ai.isStuck = true;
       }
     } else {
@@ -106,22 +140,28 @@ const AIDriver = ({
     }
     ai.lastDistanceToTarget = distanceToTarget;
 
-    // Unstuck behavior - skip to next waypoint and boost
+    // Unstuck behavior - skip ahead and boost
     if (ai.isStuck) {
-      ai.currentPathIndex = (ai.currentPathIndex + 2) % trackPath.length;
-      ai.currentSpeed = ai.maxSpeed * 1.3;
+      ai.currentPathIndex = (ai.currentPathIndex + 3) % trackPath.length;
+      ai.currentSpeed = ai.maxSpeed * 1.4;
       ai.stuckTimer = 0;
       ai.isStuck = false;
     }
 
-    // Update position
-    ai.position[0] += Math.sin(ai.rotation[1]) * ai.currentSpeed;
-    ai.position[2] += Math.cos(ai.rotation[1]) * ai.currentSpeed;
+    // Ensure minimum speed (no complete stops)
+    if (ai.currentSpeed < ai.maxSpeed * 0.15) {
+      ai.currentSpeed = ai.maxSpeed * 0.15;
+    }
+
+    // Update position with delta-time for frame-rate independence
+    const moveSpeed = ai.currentSpeed * Math.min(delta * 60, 3); // Cap at 3x for lag spikes
+    ai.position[0] += Math.sin(ai.rotation[1]) * moveSpeed;
+    ai.position[2] += Math.cos(ai.rotation[1]) * moveSpeed;
     ai.position[1] = 0.5; // Keep on ground
 
     // Update the Three.js group directly for performance
     groupRef.current.position.set(ai.position[0], ai.position[1], ai.position[2]);
-    groupRef.current.rotation.set(0, ai.rotation[1], 0);
+    groupRef.current.rotation.set(0, ai.rotation[1], ai.leanAngle * 0.5);
   });
 
   return (
@@ -131,6 +171,8 @@ const AIDriver = ({
         rotation={[0, 0, 0]}
         characterType={characterType}
         isPlayer={false}
+        isDrifting={aiState.current.isDrifting}
+        driftDirection={aiState.current.driftDirection}
       />
     </group>
   );
