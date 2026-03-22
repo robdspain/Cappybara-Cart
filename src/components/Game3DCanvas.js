@@ -230,8 +230,58 @@ const getRandomItem = (position = 1, totalRacers = 4) => {
   }
 };
 
+// Speed lines effect for sense of speed
+const SpeedLines = ({ playerRef }) => {
+  const linesRef = useRef();
+  const lineCount = 20;
+
+  const positions = useMemo(() => {
+    const pos = new Float32Array(lineCount * 6); // 2 points per line, 3 coords each
+    return pos;
+  }, []);
+
+  useFrame(() => {
+    if (!linesRef.current || !playerRef.current) return;
+
+    const playerPos = playerRef.current.position || { x: 0, y: 0, z: 0 };
+    const posAttr = linesRef.current.geometry.attributes.position;
+
+    for (let i = 0; i < lineCount; i++) {
+      const angle = (i / lineCount) * Math.PI * 2;
+      const dist = 3 + Math.random() * 5;
+      const height = Math.random() * 3;
+      const length = 1 + Math.random() * 2;
+
+      // Start point
+      posAttr.array[i * 6] = playerPos.x + Math.cos(angle) * dist;
+      posAttr.array[i * 6 + 1] = playerPos.y + height;
+      posAttr.array[i * 6 + 2] = playerPos.z + Math.sin(angle) * dist;
+
+      // End point (stretched backward)
+      posAttr.array[i * 6 + 3] = playerPos.x + Math.cos(angle) * (dist + length);
+      posAttr.array[i * 6 + 4] = playerPos.y + height;
+      posAttr.array[i * 6 + 5] = playerPos.z + Math.sin(angle) * (dist + length);
+    }
+    posAttr.needsUpdate = true;
+  });
+
+  return (
+    <lineSegments ref={linesRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={lineCount * 2}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial color="#FFFFFF" transparent opacity={0.15} />
+    </lineSegments>
+  );
+};
+
 // Main game scene
-const GameScene = ({ 
+const GameScene = ({
   onGameOver, 
   onRaceStart, 
   onRaceDataUpdate, 
@@ -286,6 +336,7 @@ const GameScene = ({
     cameraRef.current.position.lerp(targetPosition, cameraSettings.smoothing);
     cameraLookAtRef.current.lerp(lookAtTarget, cameraSettings.smoothing);
     cameraRef.current.lookAt(cameraLookAtRef.current);
+    cameraRef.current.updateProjectionMatrix();
   });
 
   // Initialize player position and rotation with safe defaults
@@ -662,53 +713,63 @@ const GameScene = ({
     switch (playerItem) {
       case ITEMS.BANANA:
         // Drop banana behind player
-        const bananaPosition = [
-          player.position[0] - Math.sin(player.angle) * 2,
-          player.position[1],
-          player.position[2] - Math.cos(player.angle) * 2
+        const bananaPos = [
+          player.position[0] - Math.sin(player.angle || 0) * 2,
+          0.3,
+          player.position[2] - Math.cos(player.angle || 0) * 2
         ];
-        
+
         setActiveItems(prev => [
           ...prev,
           {
             id: `banana-${Date.now()}`,
-            position: bananaPosition,
-            hit: false
+            position: bananaPos,
+            type: 'banana',
+            hit: false,
+            lifetime: 30
           }
         ]);
+        try { playSfx('item_use'); } catch(e) {}
         break;
         
       case ITEMS.GREEN_SHELL:
       case ITEMS.RED_SHELL:
-        // Fire shell forward
-        const shellPosition = [
-          player.position[0] + Math.sin(player.angle) * 1,
-          player.position[1],
-          player.position[2] + Math.cos(player.angle) * 1
+        const shellPos = [
+          player.position[0] + Math.sin(player.angle || 0) * 1.5,
+          0.5,
+          player.position[2] + Math.cos(player.angle || 0) * 1.5
         ];
-        
+
         setActiveItems(prev => [
           ...prev,
           {
             id: `projectile-${Date.now()}`,
-            position: shellPosition,
-            rotation: [0, player.angle, 0],
+            position: shellPos,
+            direction: player.angle || 0,
             type: playerItem,
-            velocity: 0.3,
+            speed: 20,
+            lifetime: 5,
             target: playerItem === ITEMS.RED_SHELL ? getTarget(player) : null
           }
         ]);
+        try { playSfx('item_use'); } catch(e) {}
         break;
         
       case ITEMS.MUSHROOM:
       case ITEMS.TRIPLE_MUSHROOM:
-        // Play boost sound for mushroom
-        playSfx('boost');
+        // Apply mushroom speed boost to player
+        if (playerRef.current && playerRef.current.applyBoost) {
+          playerRef.current.applyBoost(2, 1.5); // boost level 2, duration 1.5s
+        }
+        try { playSfx('boost'); } catch(e) {}
         break;
         
       case ITEMS.STAR:
-        // Play star activation sound
-        playSfx('item_use');
+        // Apply star invincibility + speed boost
+        if (playerRef.current && playerRef.current.applyBoost) {
+          playerRef.current.applyBoost(3, 5.0); // max boost level, 5 seconds
+        }
+        try { playSfx('item_use'); } catch(e) {}
         break;
         
       default:
@@ -973,7 +1034,12 @@ const GameScene = ({
         isOffTrack={isOffTrack}
         isPaused={isPaused}
       />
-      
+
+      {/* Speed lines effect */}
+      {raceState === 'racing' && (
+        <SpeedLines playerRef={playerRef} />
+      )}
+
       {/* AI racers */}
       {racers.filter(r => !r.isPlayer).map((aiRacer, index) => (
         <AIDriver

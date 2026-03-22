@@ -380,7 +380,7 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
     
     const trackOuterRadius = 20;
     const trackInnerRadius = 8;
-    const trackShape = createOvalTrack(32);
+    const trackShape = createOvalTrack(64);
     
     const minimapCanvas = document.createElement('canvas');
     minimapCanvas.width = 200;
@@ -433,60 +433,70 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
   const trackWidth = trackOuterRadius - trackInnerRadius;
   
   // Create oval track shape
-  const createOvalTrack = (segments = 32) => {
+  const createOvalTrack = (segments = 64) => {
     const outerPoints = [];
     const innerPoints = [];
-    
+    const trackCenterRadius = trackInnerRadius + trackWidth / 2;
+
     for (let i = 0; i < segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
-      const xFactor = 1.5; // Make it more oval by stretching X
-      
-      // Outer edge
+      const xFactor = 1.5;
+
+      // Same perturbation as track path for consistent shape
+      let radiusOffset = Math.sin(angle * 2) * 4 + Math.cos(angle * 3) * 2 + Math.sin(angle * 5) * 1;
+
+      const outerRadius = trackCenterRadius + trackWidth / 2 + radiusOffset;
+      const innerRadius = trackCenterRadius - trackWidth / 2 + radiusOffset;
+
       outerPoints.push({
-        x: Math.cos(angle) * trackOuterRadius * xFactor,
-        y: Math.sin(angle) * trackOuterRadius
+        x: Math.cos(angle) * outerRadius * xFactor,
+        y: Math.sin(angle) * outerRadius
       });
-      
-      // Inner edge
+
       innerPoints.push({
-        x: Math.cos(angle) * trackInnerRadius * xFactor,
-        y: Math.sin(angle) * trackInnerRadius
+        x: Math.cos(angle) * innerRadius * xFactor,
+        y: Math.sin(angle) * innerRadius
       });
     }
-    
-    // Close the loop
+
     outerPoints.push(outerPoints[0]);
     innerPoints.push(innerPoints[0]);
-    
+
     return { outerPoints, innerPoints };
   };
   
   // Track path for AI drivers - follow center of the track
-  const createTrackPath = (segments = 32) => {
+  const createTrackPath = (segments = 64) => {
     const pathPoints = [];
-    const xFactor = 1.5; // Match the oval shape
-    const centerRadius = trackInnerRadius + trackWidth / 2;
-    
+    const trackCenterRadius = trackInnerRadius + trackWidth / 2; // 14
+
     for (let i = 0; i < segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      
-      // Add some variation to make multiple lanes
-      const laneVariation = (i % 3 - 1) * (trackWidth * 0.2);
-      const radius = centerRadius + laneVariation;
-      
+      const t = i / segments;
+      const angle = t * Math.PI * 2;
+
+      // Create an interesting track shape with varying radius
+      // Base oval with perturbations for S-curves and chicanes
+      let radius = trackCenterRadius;
+
+      // Add wide sweeping turns
+      radius += Math.sin(angle * 2) * 4; // Two bumps create figure-8 feel
+      radius += Math.cos(angle * 3) * 2; // Add chicane-like sections
+      radius += Math.sin(angle * 5) * 1; // Small wiggles for texture
+
+      const xFactor = 1.5;
       pathPoints.push([
         Math.cos(angle) * radius * xFactor,
         0,
         Math.sin(angle) * radius
       ]);
     }
-    
+
     return pathPoints;
   };
   
   // Track data
   const trackData = {
-    path: createTrackPath(32),
+    path: createTrackPath(64),
     outerRadius: trackOuterRadius,
     innerRadius: trackInnerRadius,
     width: trackWidth
@@ -494,7 +504,7 @@ const RaceTrack = forwardRef(({ onCollision }, ref) => {
   
   // Create track boundaries from the oval shape
   const createTrackBoundaries = () => {
-    const { outerPoints, innerPoints } = createOvalTrack(32);
+    const { outerPoints, innerPoints } = createOvalTrack(64);
     const boundaries = [];
     
     // Outer edge segments
@@ -926,30 +936,36 @@ export const getTrackData = () => {
   const trackInnerRadius = 8;
   const trackWidth = trackOuterRadius - trackInnerRadius;
   
-  const createTrackPath = (segments = 32) => {
+  const createTrackPath = (segments = 64) => {
     const pathPoints = [];
-    const xFactor = 1.5; // Match the oval shape
-    const centerRadius = trackInnerRadius + trackWidth / 2;
-    
+    const trackCenterRadius = trackInnerRadius + trackWidth / 2; // 14
+
     for (let i = 0; i < segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      
-      // Add some variation to make multiple lanes
-      const laneVariation = (i % 3 - 1) * (trackWidth * 0.2);
-      const radius = centerRadius + laneVariation;
-      
+      const t = i / segments;
+      const angle = t * Math.PI * 2;
+
+      // Create an interesting track shape with varying radius
+      // Base oval with perturbations for S-curves and chicanes
+      let radius = trackCenterRadius;
+
+      // Add wide sweeping turns
+      radius += Math.sin(angle * 2) * 4; // Two bumps create figure-8 feel
+      radius += Math.cos(angle * 3) * 2; // Add chicane-like sections
+      radius += Math.sin(angle * 5) * 1; // Small wiggles for texture
+
+      const xFactor = 1.5;
       pathPoints.push([
         Math.cos(angle) * radius * xFactor,
         0,
         Math.sin(angle) * radius
       ]);
     }
-    
+
     return pathPoints;
   };
-  
+
   return {
-    path: createTrackPath(32),
+    path: createTrackPath(64),
     outerRadius: trackOuterRadius,
     innerRadius: trackInnerRadius,
     width: trackWidth

@@ -10,10 +10,16 @@ const AIDriver = ({
   trackPath,
   speed = 0.08,
   difficultyFactor = 1.0,
+  speedClass = '100cc',
+  playerLap = 0,
+  playerPosition = 1,
   lapCallback = () => {}
 }) => {
   const groupRef = useRef();
   const lapsRef = useRef(0);
+
+  // Speed class multiplier
+  const ccMultiplier = speedClass === '150cc' ? 1.4 : speedClass === '50cc' ? 0.7 : 1.0;
 
   const aiState = useRef({
     speed: speed * difficultyFactor,
@@ -39,14 +45,23 @@ const AIDriver = ({
     }
   });
 
-  // Initialize or update state when props change
+  // Initialize or update state when props change (including rubber-banding)
   useEffect(() => {
     const ai = aiState.current;
-    ai.speed = speed * difficultyFactor;
-    ai.acceleration = 0.003 * difficultyFactor * ai.personality.aggression;
-    ai.maxSpeed = 0.22 * difficultyFactor * ai.personality.aggression;
-    ai.turnSpeed = 0.08 * difficultyFactor;
-  }, [speed, difficultyFactor]);
+
+    // Rubber-band: AI gets faster when player is ahead, slower when behind
+    let rubberBand = 1.0;
+    if (playerPosition === 1) {
+      rubberBand = 1.15; // Player is winning, AI speeds up
+    } else if (playerPosition >= 4) {
+      rubberBand = 0.9; // Player is losing, AI slows down
+    }
+
+    ai.speed = speed * difficultyFactor * ccMultiplier;
+    ai.acceleration = 0.003 * difficultyFactor * ai.personality.aggression * ccMultiplier * rubberBand;
+    ai.maxSpeed = 0.22 * difficultyFactor * ai.personality.aggression * ccMultiplier * rubberBand;
+    ai.turnSpeed = 0.08 * difficultyFactor * ccMultiplier;
+  }, [speed, difficultyFactor, ccMultiplier, playerPosition]);
 
   // AI movement logic
   useFrame((state, delta) => {

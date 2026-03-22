@@ -136,14 +136,14 @@ const PlayerRacer = forwardRef(({
     engineAcceleration: 20,
     deceleration: 15, // Natural deceleration when not accelerating
     brakeStrength: 30,
-    steeringSpeed: 2.5,
-    steeringReturn: 3, // How quickly steering returns to center
+    steeringSpeed: 4.0,
+    steeringReturn: 6, // How quickly steering returns to center
     
     // Physics properties
     mass: 150, // kg
     gravity: 20, // m/s²
-    drag: 0.3,  // Air resistance
-    rollingResistance: 0.2,
+    drag: 0.4,  // Air resistance
+    rollingResistance: 0.3,
     groundFriction: 0.7,
     
     // Suspension
@@ -154,7 +154,7 @@ const PlayerRacer = forwardRef(({
     suspensionRestLength: 0.5,
     
     // Steering and handling
-    corneringStiffness: 5, // How well the kart grips in turns
+    corneringStiffness: 8, // How well the kart grips in turns
     wheelBase: 1.2, // Distance between front and rear wheels
     rearWeightBias: 0.45, // Weight distribution (percentage on rear)
     
@@ -509,7 +509,7 @@ const PlayerRacer = forwardRef(({
     const steeringSpeed = keysRef.Space ? kartPhysics.steeringSpeed * 0.7 : kartPhysics.steeringSpeed;
     
     if (Math.abs(steeringDelta) > 0.001) {
-      kartPhysics.steering += steeringDelta * Math.min(1, delta * steeringSpeed * 3);
+      kartPhysics.steering += steeringDelta * Math.min(1, delta * steeringSpeed * 5);
     } else {
       kartPhysics.steering = targetSteering;
     }
@@ -637,10 +637,19 @@ const PlayerRacer = forwardRef(({
       }
     }
     
-    // Apply off-track physics
+    // Apply surface-based friction
     if (!trackResult.isOnTrack) {
-      // Reduce velocity when off track
-      kartPhysics.velocity.multiplyScalar(0.95);
+      kartPhysics.velocity.multiplyScalar(trackResult.surfaceFriction);
+    }
+
+    // Gentle push-back toward track center when far off-track
+    if (!trackResult.isOnTrack && trackResult.surfaceFriction < 0.5) {
+      const pushBackForce = new THREE.Vector3(
+        -playerGroup.position.x,
+        0,
+        -playerGroup.position.z
+      ).normalize().multiplyScalar(0.5);
+      kartPhysics.velocity.add(pushBackForce);
     }
     
     // Calculate target facing direction from velocity
@@ -784,12 +793,35 @@ const PlayerRacer = forwardRef(({
     // Check if position is outside track boundaries
     const isOutsideTrack = distanceFromCenter > outerBoundary || distanceFromCenter < innerBoundary;
     
-    // Return the result 
+    // Determine surface type based on distance from track
+    let surfaceType = 'track';
+    let surfaceFriction = 1.0;
+
+    if (isOutsideTrack) {
+      // Check how far off-track we are
+      const distanceOffTrack = distanceFromCenter > outerBoundary
+        ? distanceFromCenter - outerBoundary
+        : innerBoundary - distanceFromCenter;
+
+      if (distanceOffTrack < 3) {
+        surfaceType = 'grass';
+        surfaceFriction = 0.6;
+      } else if (distanceOffTrack < 8) {
+        surfaceType = 'sand';
+        surfaceFriction = 0.45;
+      } else {
+        surfaceType = 'dirt';
+        surfaceFriction = 0.35;
+      }
+    }
+
     return {
       isOnTrack: !isOutsideTrack,
       distanceFromCenter,
       innerBoundary,
-      outerBoundary
+      outerBoundary,
+      surfaceType,
+      surfaceFriction
     };
   };
   
@@ -836,6 +868,10 @@ const PlayerRacer = forwardRef(({
       setCoins(prev => Math.min(prev + 1, 10)); // Max 10 coins like SNES
     },
     getCoinCount: () => coins,
+    applyBoost: (level, duration) => {
+      kartPhysics.boostLevel = level;
+      kartPhysics.boostTimeRemaining = duration;
+    },
   }), [coins]);
 
   // Update position for camera tracking with null checks
@@ -871,33 +907,41 @@ const PlayerRacer = forwardRef(({
           isActive={true}
         />
         
-        {/* Drift visual effects */}
+        {/* Drift visual effects - sparks */}
         {kartPhysics.isDrifting && kartPhysics.driftCharge > 20 && (
           <>
             {/* Left wheel spark trail */}
-            <mesh 
-              position={[-0.5, 0.1, -0.5]} 
-              rotation={[0, -Math.PI / 2, 0]}
+            <mesh
+              position={[-0.5, 0.05, -0.6]}
+              rotation={[Math.PI / 2, 0, 0]}
             >
-              <planeGeometry args={[1, 0.2]} />
-              <meshBasicMaterial 
-                color={getBoostColor(kartPhysics.driftCharge)} 
-                transparent 
-                opacity={0.7} 
+              <ringGeometry args={[0, 0.3 + kartPhysics.driftCharge * 0.002, 8]} />
+              <meshBasicMaterial
+                color={getBoostColor(kartPhysics.driftCharge)}
+                transparent
+                opacity={0.8}
+                side={THREE.DoubleSide}
               />
             </mesh>
-            
+
             {/* Right wheel spark trail */}
-            <mesh 
-              position={[0.5, 0.1, -0.5]} 
-              rotation={[0, -Math.PI / 2, 0]}
+            <mesh
+              position={[0.5, 0.05, -0.6]}
+              rotation={[Math.PI / 2, 0, 0]}
             >
-              <planeGeometry args={[1, 0.2]} />
-              <meshBasicMaterial 
-                color={getBoostColor(kartPhysics.driftCharge)} 
-                transparent 
-                opacity={0.7} 
+              <ringGeometry args={[0, 0.3 + kartPhysics.driftCharge * 0.002, 8]} />
+              <meshBasicMaterial
+                color={getBoostColor(kartPhysics.driftCharge)}
+                transparent
+                opacity={0.8}
+                side={THREE.DoubleSide}
               />
+            </mesh>
+
+            {/* Drift smoke trail */}
+            <mesh position={[kartPhysics.driftDirection * -0.3, 0.1, -0.8]}>
+              <sphereGeometry args={[0.4 + kartPhysics.driftCharge * 0.001, 8, 8]} />
+              <meshBasicMaterial color="#CCCCCC" transparent opacity={0.3} />
             </mesh>
           </>
         )}
@@ -908,15 +952,15 @@ const PlayerRacer = forwardRef(({
             position={[0, 0.5, -1]} 
             rotation={[0, 0, 0]}
           >
-            <coneGeometry args={[0.5, 2, 16]} />
-            <meshBasicMaterial 
+            <coneGeometry args={[0.4, 2.5, 12]} />
+            <meshBasicMaterial
               color={
-                kartPhysics.boostLevel === 3 ? "#9C27B0" : 
-                kartPhysics.boostLevel === 2 ? "#FF9800" : 
+                kartPhysics.boostLevel === 3 ? "#9C27B0" :
+                kartPhysics.boostLevel === 2 ? "#FF9800" :
                 "#2196F3"
-              } 
-              transparent 
-              opacity={0.7} 
+              }
+              transparent
+              opacity={0.85}
             />
           </mesh>
         )}
@@ -930,6 +974,14 @@ const PlayerRacer = forwardRef(({
         )}
       </mesh>
       
+      {/* Off-track dust particles */}
+      {!isOnTrack && kartPhysics.velocity.length() > 2 && (
+        <mesh position={[0, 0.2, -0.5]}>
+          <sphereGeometry args={[0.6, 6, 6]} />
+          <meshBasicMaterial color="#8B7355" transparent opacity={0.4} />
+        </mesh>
+      )}
+
       {/* Drift charge indicator (UI element) */}
       {driftState.isDrifting && driftState.charge > 60 && (
         <mesh 
